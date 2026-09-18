@@ -1,0 +1,423 @@
+{
+  "surum": 1,
+  "aciklama": "İZ sensör kataloğu. Her sensör bir veri tanımıdır; motor sensöre özel kod içermez, ayak izi tipine ve bu alanlara göre çalışır. Kurum adları kurgusaldır.",
+
+  "kademeler": {
+    "1": { "ad": "Açık ve idari kayıt", "maliyet": 30 },
+    "2": { "ad": "Hizmet kayıtları", "maliyet": 60 },
+    "3": { "ad": "Mahrem veri", "maliyet": 120 },
+    "4": { "ad": "Ağır döküm", "maliyet": 200 }
+  },
+
+  "ayak_izi_tipleri": {
+    "nokta":    "Tek bir POI noktası, harita katmanı nokta işareti.",
+    "koni":     "Kamera görüş konisi çokgeni.",
+    "hucre":    "Baz istasyonu hücre çokgeni.",
+    "adres":    "Adres bilgisi; hassasiyet 'mahalle' ise mahalle çokgeni, 'nokta' ise adres noktası.",
+    "guzergah": "Sıralı noktalar (durak, istasyon, köprü geçişi) ve bunları birleştiren çizgi."
+  },
+
+  "olay_turleri": {
+    "konum":        "Hedef bir yerde bulunuyor (ev, iş, üçüncü nokta, rutin dışı yer). Baz ve internet kaydı üretir.",
+    "yolculuk":     "İki yer arası hareket; ulaşım moduna göre durak, köprü, kamera kaydı üretir.",
+    "alisveris":    "Markette veya iş yerinde ödeme; ödeme disiplinine göre POS kaydı üretir.",
+    "atm_cekim":    "ATM'den nakit çekim.",
+    "eczane":       "Eczanede reçete karşılama.",
+    "kargo_teslim": "Kargo teslimatı, ev veya iş adresine.",
+    "doviz":        "Döviz bürosunda işlem.",
+    "benzin":       "Benzinlikte yakıt alımı, araç modunda.",
+    "park":         "Otoparka giriş, araç modunda.",
+    "paylasim":     "Sosyal medyada açık paylaşım, nadir."
+  },
+
+  "gurultu_tipleri": {
+    "eski_adres":      "Kayıt eski, kişi artık orada oturmuyor. Adres başka bir POI'ye işaret eder.",
+    "baskasinin_aboneligi": "Abonelik kiracıya veya akrabaya ait, adres hedefle ilgisiz.",
+    "adas":            "Aynı isimli ikinci kişi. Kayıt hedefin hiç gitmediği rastgele bir noktada.",
+    "komsu_hucre":     "Baz kaydı gerçek hücrenin komşusuna sıçradı.",
+    "sahte_eslesme":   "Kamera yüz eşleştirmesi yanlış kişiyi işaret etti.",
+    "gecikmeli_kayit": "Kayıt saati gerçek olaydan 1 ila 3 saat sonra görünüyor."
+  },
+
+  "sert_kisit_tipleri": {
+    "hucre":    "Şu anki konum, kayıttaki hücre veya komşularından birinin içindedir. Koşul: kayıt şu anki zamana yakın (telefon açık).",
+    "yaka":     "Şu anki konum, son geçişin yönüne göre Avrupa veya Anadolu yakasındadır.",
+    "yaricap":  "Şu anki konum, son kaydın noktasına belirtilen metre içinde. Koşul: kayıt yakın zamanlı.",
+    "aday_yer": "Şu anki konum, bu sensörün kayıtlarında geçen yerlerden biri olabilir. Tek başına daraltmaz, diğer kısıtlarla kesişir."
+  },
+
+  "sensorler": [
+    {
+      "id": "nufus_kaydi",
+      "ad": "NÜFUSNET adres kaydı",
+      "kurum": "NÜFUSNET",
+      "kademe": 1,
+      "maliyet": 30,
+      "ayak_izi": "adres",
+      "hassasiyet": "mahalle",
+      "varyant": "tek",
+      "es_varyant": null,
+      "kapsam": { "tip": "sabit" },
+      "olaylar": ["konum"],
+      "roller": ["ev"],
+      "yakalama_olasiligi": 1.0,
+      "alanlar": ["ilce", "mahalle", "kayit_yili"],
+      "gurultu": [
+        { "tip": "eski_adres", "olasilik": 0.3 }
+      ],
+      "sert_kisit": null,
+      "parametreler": [],
+      "kart_metni": "Kayıtlı ikamet: {ilce} / {mahalle}. Kayıt yılı {kayit_yili}."
+    },
+    {
+      "id": "arac_tescili",
+      "ad": "SİCİLNET araç tescili",
+      "kurum": "SİCİLNET",
+      "kademe": 1,
+      "maliyet": 30,
+      "ayak_izi": "adres",
+      "hassasiyet": "ilce",
+      "varyant": "tek",
+      "es_varyant": null,
+      "kapsam": { "tip": "sabit" },
+      "olaylar": ["konum"],
+      "roller": ["ev"],
+      "yakalama_olasiligi": 1.0,
+      "alanlar": ["arac_var", "plaka", "ilce"],
+      "gurultu": [],
+      "sert_kisit": null,
+      "parametreler": [],
+      "kart_metni": "Araç: {arac_var}. Plaka {plaka}, tescil ilçesi {ilce}."
+    },
+    {
+      "id": "abonelik",
+      "ad": "Elektrik ve su aboneliği",
+      "kurum": "ABONENET",
+      "kademe": 1,
+      "maliyet": 30,
+      "ayak_izi": "adres",
+      "hassasiyet": "nokta",
+      "varyant": "tek",
+      "es_varyant": null,
+      "kapsam": { "tip": "sabit" },
+      "olaylar": ["konum"],
+      "roller": ["ev"],
+      "yakalama_olasiligi": 1.0,
+      "alanlar": ["adres_poi", "ilce", "mahalle", "abone_tipi"],
+      "gurultu": [
+        { "tip": "baskasinin_aboneligi", "olasilik": 0.35 }
+      ],
+      "sert_kisit": { "tip": "aday_yer" },
+      "parametreler": [],
+      "kart_metni": "Abonelik adresi: {ilce} / {mahalle}. Abone tipi {abone_tipi}."
+    },
+    {
+      "id": "sosyal_medya",
+      "ad": "Sosyal medya açık paylaşımı",
+      "kurum": "AÇIK KAYNAK",
+      "kademe": 1,
+      "maliyet": 30,
+      "ayak_izi": "nokta",
+      "varyant": "tek",
+      "es_varyant": null,
+      "kapsam": { "tip": "son" },
+      "olaylar": ["paylasim"],
+      "yakalama_olasiligi": 1.0,
+      "belirsizlik_m": 500,
+      "alanlar": ["kaba_konum", "gun", "saat"],
+      "gurultu": [],
+      "sert_kisit": { "tip": "yaricap", "metre": 600, "yakinlik_saat": 2 },
+      "parametreler": [],
+      "kart_metni": "Son paylaşım: {gun}. gün {saat}, konum yaklaşık {kaba_konum}."
+    },
+
+    {
+      "id": "istanbulkart",
+      "ad": "İstanbulkart hareketleri",
+      "kurum": "ULAŞIMNET",
+      "kademe": 2,
+      "maliyet": 60,
+      "ayak_izi": "guzergah",
+      "varyant": "tek",
+      "es_varyant": null,
+      "kapsam": { "tip": "pencere_gun", "gun": 7 },
+      "olaylar": ["yolculuk"],
+      "modlar": ["toplu_tasima", "karisik"],
+      "yakalama_olasiligi": 0.9,
+      "alanlar": ["durak_id", "durak_adi", "gun", "saat"],
+      "gurultu": [
+        { "tip": "gecikmeli_kayit", "olasilik": 0.05 }
+      ],
+      "sert_kisit": null,
+      "parametreler": [],
+      "kart_metni": "{gun}. gün {saat} biniş: {durak_adi}."
+    },
+    {
+      "id": "hgs",
+      "ad": "HGS geçişleri",
+      "kurum": "GEÇİŞNET",
+      "kademe": 2,
+      "maliyet": 60,
+      "ayak_izi": "guzergah",
+      "varyant": "tek",
+      "es_varyant": null,
+      "kapsam": { "tip": "pencere_gun", "gun": 14 },
+      "olaylar": ["yolculuk"],
+      "modlar": ["arac", "karisik"],
+      "yakalama_olasiligi": 1.0,
+      "alanlar": ["gecis_id", "gecis_adi", "yon", "gun", "saat"],
+      "gurultu": [],
+      "sert_kisit": { "tip": "yaka" },
+      "parametreler": [],
+      "kart_metni": "{gun}. gün {saat}: {gecis_adi}, yön {yon}."
+    },
+    {
+      "id": "otopark",
+      "ad": "İSPARK ve otopark kayıtları",
+      "kurum": "PARKNET",
+      "kademe": 2,
+      "maliyet": 60,
+      "ayak_izi": "nokta",
+      "varyant": "tek",
+      "es_varyant": null,
+      "kapsam": { "tip": "pencere_gun", "gun": 14 },
+      "olaylar": ["park"],
+      "yakalama_olasiligi": 0.85,
+      "alanlar": ["poi_id", "gun", "saat", "sure_dk"],
+      "gurultu": [],
+      "sert_kisit": { "tip": "aday_yer" },
+      "parametreler": [],
+      "kart_metni": "{gun}. gün {saat}: park, {sure_dk} dk."
+    },
+    {
+      "id": "kargo",
+      "ad": "Kargo teslimat kaydı",
+      "kurum": "KARGONET",
+      "kademe": 2,
+      "maliyet": 60,
+      "ayak_izi": "adres",
+      "hassasiyet": "nokta",
+      "varyant": "tek",
+      "es_varyant": null,
+      "kapsam": { "tip": "son" },
+      "olaylar": ["kargo_teslim"],
+      "yakalama_olasiligi": 1.0,
+      "alanlar": ["adres_poi", "ilce", "mahalle", "gun", "teslim_yeri"],
+      "gurultu": [],
+      "sert_kisit": { "tip": "aday_yer" },
+      "parametreler": [],
+      "kart_metni": "Son teslimat {gun}. gün: {ilce} / {mahalle} ({teslim_yeri})."
+    },
+    {
+      "id": "eczane",
+      "ad": "Eczane reçete karşılama",
+      "kurum": "REÇETENET",
+      "kademe": 2,
+      "maliyet": 60,
+      "ayak_izi": "nokta",
+      "varyant": "tek",
+      "es_varyant": null,
+      "kapsam": { "tip": "pencere_gun", "gun": 14 },
+      "olaylar": ["eczane"],
+      "yakalama_olasiligi": 1.0,
+      "alanlar": ["poi_id", "gun", "saat"],
+      "gurultu": [],
+      "sert_kisit": { "tip": "aday_yer" },
+      "parametreler": [],
+      "kart_metni": "{gun}. gün {saat}: reçete karşılandı."
+    },
+    {
+      "id": "kamera_tekil",
+      "ad": "ŞEHİRGÖZ kamera arşivi, tekil",
+      "kurum": "ŞEHİRGÖZ",
+      "kademe": 2,
+      "maliyet": 60,
+      "ayak_izi": "koni",
+      "varyant": "dar",
+      "es_varyant": "kamera_genis",
+      "kapsam": { "tip": "pencere_gun", "gun": 14 },
+      "olaylar": ["yolculuk"],
+      "yakalama_olasiligi": 0.6,
+      "yakalama_yaricapi_m": 250,
+      "alanlar": ["kamera_kodu", "eslesme", "yon", "gun", "saat"],
+      "gurultu": [
+        { "tip": "sahte_eslesme", "olasilik": 0.08 }
+      ],
+      "sert_kisit": null,
+      "parametreler": [
+        { "ad": "kamera_kodu", "tip": "kamera", "zorunlu": true },
+        { "ad": "gun", "tip": "gun", "zorunlu": true },
+        { "ad": "saat_baslangic", "tip": "saat", "zorunlu": true },
+        { "ad": "saat_bitis", "tip": "saat", "zorunlu": true }
+      ],
+      "kart_metni": "{kamera_kodu}, {gun}. gün {saat}: eşleşme {eslesme}, yön {yon}."
+    },
+
+    {
+      "id": "baz_son",
+      "ad": "Baz istasyonu, son kayıt",
+      "kurum": "İLETİŞİMNET",
+      "kademe": 3,
+      "maliyet": 120,
+      "ayak_izi": "hucre",
+      "varyant": "dar",
+      "es_varyant": "baz_dokum",
+      "kapsam": { "tip": "son" },
+      "olaylar": ["konum", "yolculuk"],
+      "telefon_gerekir": true,
+      "yakalama_olasiligi": 1.0,
+      "alanlar": ["hucre_kodu", "gun", "saat"],
+      "gurultu": [
+        { "tip": "komsu_hucre", "olasilik": 0.15 }
+      ],
+      "sert_kisit": { "tip": "hucre", "komsular_dahil": true, "yakinlik_saat": 2 },
+      "parametreler": [],
+      "kart_metni": "Son görülme: hücre {hucre_kodu}, {gun}. gün {saat}."
+    },
+    {
+      "id": "atm",
+      "ad": "ATM çekimleri",
+      "kurum": "FİNANSNET",
+      "kademe": 3,
+      "maliyet": 120,
+      "ayak_izi": "nokta",
+      "varyant": "dar",
+      "es_varyant": "banka_dokum",
+      "kapsam": { "tip": "pencere_gun", "gun": 14 },
+      "olaylar": ["atm_cekim"],
+      "yakalama_olasiligi": 1.0,
+      "alanlar": ["poi_id", "gun", "saat", "tutar_araligi"],
+      "gurultu": [
+        { "tip": "adas", "olasilik": 0.2 }
+      ],
+      "sert_kisit": { "tip": "aday_yer" },
+      "parametreler": [],
+      "kart_metni": "{gun}. gün {saat}: çekim, {tutar_araligi}."
+    },
+    {
+      "id": "pos",
+      "ad": "POS harcamaları",
+      "kurum": "FİNANSNET",
+      "kademe": 3,
+      "maliyet": 120,
+      "ayak_izi": "nokta",
+      "varyant": "dar",
+      "es_varyant": "banka_dokum",
+      "kapsam": { "tip": "pencere_gun", "gun": 14 },
+      "olaylar": ["alisveris", "benzin", "eczane"],
+      "odeme_gerekir": "kart",
+      "yakalama_olasiligi": 1.0,
+      "alanlar": ["poi_id", "kategori", "gun", "saat", "tutar_araligi"],
+      "gurultu": [
+        { "tip": "adas", "olasilik": 0.1 }
+      ],
+      "sert_kisit": { "tip": "aday_yer" },
+      "parametreler": [],
+      "kart_metni": "{gun}. gün {saat}: {kategori}, {tutar_araligi}."
+    },
+    {
+      "id": "doviz",
+      "ad": "Döviz bürosu işlemi",
+      "kurum": "FİNANSNET",
+      "kademe": 3,
+      "maliyet": 120,
+      "ayak_izi": "nokta",
+      "varyant": "dar",
+      "es_varyant": "banka_dokum",
+      "kapsam": { "tip": "pencere_gun", "gun": 14 },
+      "olaylar": ["doviz"],
+      "yakalama_olasiligi": 1.0,
+      "alanlar": ["poi_id", "gun", "tutar_araligi"],
+      "gurultu": [],
+      "sert_kisit": { "tip": "aday_yer" },
+      "parametreler": [],
+      "kart_metni": "{gun}. gün: döviz işlemi, {tutar_araligi}."
+    },
+    {
+      "id": "ev_interneti",
+      "ad": "Ev interneti IP kaydı",
+      "kurum": "İLETİŞİMNET",
+      "kademe": 3,
+      "maliyet": 120,
+      "ayak_izi": "adres",
+      "hassasiyet": "nokta",
+      "varyant": "tek",
+      "es_varyant": null,
+      "kapsam": { "tip": "son" },
+      "olaylar": ["konum"],
+      "roller": ["ev"],
+      "yakalama_olasiligi": 1.0,
+      "alanlar": ["adres_poi", "ilce", "mahalle", "son_baglanti_gun", "son_baglanti_saat"],
+      "gurultu": [
+        { "tip": "baskasinin_aboneligi", "olasilik": 0.25 }
+      ],
+      "sert_kisit": { "tip": "aday_yer" },
+      "parametreler": [],
+      "kart_metni": "Abonelik: {ilce} / {mahalle}. Son bağlantı {son_baglanti_gun}. gün {son_baglanti_saat}."
+    },
+
+    {
+      "id": "baz_dokum",
+      "ad": "14 günlük tam baz dökümü",
+      "kurum": "İLETİŞİMNET",
+      "kademe": 4,
+      "maliyet": 200,
+      "ayak_izi": "hucre",
+      "varyant": "genis",
+      "es_varyant": "baz_son",
+      "kapsam": { "tip": "pencere_gun", "gun": 14 },
+      "olaylar": ["konum", "yolculuk"],
+      "telefon_gerekir": true,
+      "yakalama_olasiligi": 1.0,
+      "alanlar": ["hucre_kodu", "gun", "saat"],
+      "gurultu": [
+        { "tip": "komsu_hucre", "olasilik": 0.15 }
+      ],
+      "sert_kisit": { "tip": "hucre", "komsular_dahil": true, "tum_kayitlar": true },
+      "parametreler": [],
+      "kart_metni": "{gun}. gün {saat}: hücre {hucre_kodu}."
+    },
+    {
+      "id": "banka_dokum",
+      "ad": "Tam banka dökümü",
+      "kurum": "FİNANSNET",
+      "kademe": 4,
+      "maliyet": 200,
+      "ayak_izi": "nokta",
+      "varyant": "genis",
+      "es_varyant": ["atm", "pos", "doviz"],
+      "kapsam": { "tip": "pencere_gun", "gun": 14 },
+      "olaylar": ["atm_cekim", "alisveris", "benzin", "eczane", "doviz"],
+      "birlesik": ["atm", "pos", "doviz"],
+      "yakalama_olasiligi": 1.0,
+      "alanlar": ["poi_id", "kaynak_sensor", "kategori", "gun", "saat", "tutar_araligi"],
+      "gurultu": [],
+      "sert_kisit": { "tip": "aday_yer" },
+      "parametreler": [],
+      "kart_metni": "{gun}. gün {saat}: {kaynak_sensor}, {kategori}, {tutar_araligi}."
+    },
+    {
+      "id": "kamera_genis",
+      "ad": "ŞEHİRGÖZ geniş tarama, ilçe",
+      "kurum": "ŞEHİRGÖZ",
+      "kademe": 4,
+      "maliyet": 200,
+      "ayak_izi": "koni",
+      "varyant": "genis",
+      "es_varyant": "kamera_tekil",
+      "kapsam": { "tip": "pencere_gun", "gun": 14 },
+      "olaylar": ["yolculuk"],
+      "yakalama_olasiligi": 0.6,
+      "yakalama_yaricapi_m": 250,
+      "alanlar": ["kamera_kodu", "eslesme", "yon", "gun", "saat"],
+      "gurultu": [
+        { "tip": "sahte_eslesme", "olasilik": 0.08 }
+      ],
+      "sert_kisit": null,
+      "parametreler": [
+        { "ad": "ilce", "tip": "ilce", "zorunlu": true }
+      ],
+      "kart_metni": "{kamera_kodu}, {gun}. gün {saat}: eşleşme, yön {yon}."
+    }
+  ]
+}
