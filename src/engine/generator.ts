@@ -61,13 +61,10 @@ function yerYap(veri: Veri, poi: Poi, rol: YerRolu): Yer {
   return { poi_id: poi.id, rol, kategori: poi.kategori, ilce: poi.ilce, mahalle: poi.mahalle, konum: poi.konum, hucre_kodu: h?.kod ?? "BZ-000", yaka: yaka(poi.ilce) };
 }
 
-function kategoridenSec(veri: Veri, rng: Rng, kategoriler: string[], kosul?: (p: Poi) => boolean, deneme = 200): Poi | null {
-  const havuz = kategoriler.flatMap((k) => veri.kategoriye.get(k) ?? []);
-  for (let i = 0; i < deneme; i++) {
-    const p = rng.sec(havuz);
-    if (!kosul || kosul(p)) return p;
-  }
-  return null;
+/** Koşula uyanlar önce süzülür, sonra aralarından seçilir. Boşsa null. */
+function kategoridenSec(veri: Veri, rng: Rng, kategoriler: string[], kosul?: (p: Poi) => boolean): Poi | null {
+  const havuz = kategoriler.flatMap((k) => veri.kategoriye.get(k) ?? []).filter((p) => !kosul || kosul(p));
+  return havuz.length ? rng.sec(havuz) : null;
 }
 
 function plakaUret(rng: Rng): string {
@@ -82,8 +79,9 @@ function hayatModeliKur(veri: Veri, rng: Rng): HayatModeli {
     return p.id !== evPoi.id && m >= 2000 && m <= 25000;
   });
   if (!isPoi) throw new UretimReddi("is_bulunamadi");
-  const ucuncuPoi = kategoridenSec(veri, rng, UCUNCU_KATEGORILERI, (p) =>
-    p.id !== evPoi.id && p.id !== isPoi.id && (mesafeM(p.konum, evPoi.konum) <= 3000 || mesafeM(p.konum, isPoi.konum) <= 3000));
+  const ucuncuKosul = (yaricap: number) => (p: Poi) =>
+    p.id !== evPoi.id && p.id !== isPoi.id && (mesafeM(p.konum, evPoi.konum) <= yaricap || mesafeM(p.konum, isPoi.konum) <= yaricap);
+  const ucuncuPoi = kategoridenSec(veri, rng, UCUNCU_KATEGORILERI, ucuncuKosul(3000)) ?? kategoridenSec(veri, rng, UCUNCU_KATEGORILERI, ucuncuKosul(6000));
   if (!ucuncuPoi) throw new UretimReddi("ucuncu_bulunamadi");
 
   const ulasim = rng.agirlikli<UlasimModu>([["arac", 0.4], ["toplu_tasima", 0.4], ["karisik", 0.2]]);
@@ -116,10 +114,9 @@ function odemeSekli(model: HayatModeli, z: Zaman): Odeme {
   return model.dovizGunu !== null && z.gun > model.dovizGunu ? "nakit" : "kart";
 }
 
-function olayEkle(b: Baglam, tur: string, z: Zaman, ek: Partial<Olay> = {}): Olay | null {
-  // Şu andan sonraki olaylar üretilmez; şu anı kapsayan konum olayının bitişi şu ana çekilir.
-  if (!once(z, b.suAn) && zamanDakika(z) !== zamanDakika(b.suAn)) return null;
-  const bitis = ek.bitis && !once(ek.bitis, b.suAn) ? b.suAn : (ek.bitis ?? null);
+function olayEkle(b: Baglam, tur: string, z: Zaman, ek: Partial<Olay> = {}): Olay {
+  if (z.gun > BUGUN) z = zaman(BUGUN, 23, 59);
+  const bitis = ek.bitis && ek.bitis.gun > BUGUN ? zaman(BUGUN, 23, 59) : (ek.bitis ?? null);
   const o: Olay = {
     id: `O${String(++b.sayac).padStart(4, "0")}`, tur, zaman: z, bitis,
     yer_poi_id: ek.yer_poi_id ?? null, rol: ek.rol ?? null, yolculuk: ek.yolculuk ?? null,
@@ -160,8 +157,8 @@ function yolculuk(b: Baglam, nereden: Yer, nereye: Yer, z: Zaman): number {
   return sure;
 }
 
-function konum(b: Baglam, yer: Yer, bas: Zaman, bit: Zaman): void {
-  olayEkle(b, "konum", bas, { yer_poi_id: yer.poi_id, rol: yer.rol, bitis: bit });
+function konum(b: Baglam, yer: Yer, bas: Zaman, bit: Zaman): Olay {
+  return olayEkle(b, "konum", bas, { yer_poi_id: yer.poi_id, rol: yer.rol, bitis: bit });
 }
 
 function alisveris(b: Baglam, yakinYer: Yer, z: Zaman, azamiM: number): void {
@@ -219,7 +216,7 @@ function gunPlani(b: Baglam, gun: number, s: GunSecenekleri): void {
     const yol = yolculuk(b, ev, is, cikis);
     const varis = ekle(cikis, yol);
     const mesaiBitis = zaman(gun, 17, r.tam(15, 45));
-    konum(b, is, varis, mesaiBitis);
+    const mesai = konum(b, is, varis, mesaiBitis);
     if (r.sans(0.5)) alisveris(b, is, zaman(gun, 12, r.tam(20, 50)), 600);
     if (s.doviz) {
       const buro = enYakin(b.veri.kategoriye.get("doviz") ?? [], is.konum, 6000) ?? enYakin(b.veri.kategoriye.get("doviz") ?? [], ev.konum);
@@ -235,8 +232,8 @@ function gunPlani(b: Baglam, gun: number, s: GunSecenekleri): void {
     if (s.rutinDisi) {
       const cikisSaati = zaman(gun, s.rutinDisiSaat, r.tam(0, 20));
       // Rutin dışı ziyaret için mesai erken biter.
-      b.olaylar.at(-1)!.bitis = once(cikisSaati, mesaiBitis) ? cikisSaati : mesaiBitis;
       const bas = once(cikisSaati, mesaiBitis) ? cikisSaati : mesaiBitis;
+      mesai.bitis = bas;
       simdi = ziyaret(b, is, s.rutinDisi, bas, r.tam(90, 180));
       bulundugu = s.rutinDisi;
     } else if (s.aksamUcuncu) {
@@ -262,24 +259,24 @@ function gunPlani(b: Baglam, gun: number, s: GunSecenekleri): void {
 }
 
 /** Şu anki konum türü zorluğa göre: kolay ev, standart iş veya üçüncü, uzman rutin dışı. */
-function suAnPlani(b: Baglam, rng: Rng): { suAn: Zaman; hedefRol: YerRolu; rutinDisi: Yer | null; rutinDisiSaat: number } {
-  if (b.zorluk === "kolay") return { suAn: zaman(BUGUN, 21, rng.tam(0, 59)), hedefRol: "ev", rutinDisi: null, rutinDisiSaat: 0 };
-  if (b.zorluk === "standart") {
-    return rng.sans(0.5)
-      ? { suAn: zaman(BUGUN, 14, rng.tam(0, 59)), hedefRol: "is", rutinDisi: null, rutinDisiSaat: 0 }
-      : { suAn: zaman(BUGUN, 19, rng.tam(30, 59)), hedefRol: "ucuncu", rutinDisi: null, rutinDisiSaat: 0 };
-  }
+function suAnPlani(b: Baglam, rng: Rng): { hedefRol: YerRolu; rutinDisi: Yer | null; rutinDisiSaat: number } {
+  if (b.zorluk === "kolay") return { hedefRol: "ev", rutinDisi: null, rutinDisiSaat: 0 };
+  if (b.zorluk === "standart") return rng.sans(0.5) ? { hedefRol: "is", rutinDisi: null, rutinDisiSaat: 0 } : { hedefRol: "ucuncu", rutinDisi: null, rutinDisiSaat: 0 };
+  // Uzman: rutin dışı yer. Adalet kuralı için yerin kayıt bırakması gerekir: telefon kapalıysa
+  // yalnızca kendiliğinden kayıt üreten kategoriler (eczane, döviz) veya kartla ödeme yapılan yerler.
   const { ev, is, ucuncu } = b.model;
-  const poi = kategoridenSec(b.veri, rng, RUTIN_DISI_KATEGORILERI, (p) =>
+  const telefonSonGun = telefonAcik(b.model, zaman(BUGUN, 16));
+  const kategoriler = telefonSonGun ? RUTIN_DISI_KATEGORILERI
+    : b.model.odeme === "hep_kart" ? ["market", "kahvehane", "eczane", "doviz"] : ["eczane", "doviz"];
+  const poi = kategoridenSec(b.veri, rng, kategoriler, (p) =>
     ![ev.poi_id, is.poi_id, ucuncu.poi_id].includes(p.id) && mesafeM(p.konum, ev.konum) <= 9000 && mesafeM(p.konum, is.konum) > 800);
   if (!poi) throw new UretimReddi("rutin_disi_bulunamadi");
-  return { suAn: zaman(BUGUN, 16, rng.tam(15, 59)), hedefRol: "rutin_disi", rutinDisi: yerYap(b.veri, poi, "rutin_disi"), rutinDisiSaat: 14 };
+  return { hedefRol: "rutin_disi", rutinDisi: yerYap(b.veri, poi, "rutin_disi"), rutinDisiSaat: 14 };
 }
 
 function rutinKur(veri: Veri, rng: Rng, model: HayatModeli, zorluk: Zorluk): { olaylar: Olay[]; suAn: Zaman; hedefRol: YerRolu; rutinDisi: Yer | null } {
   const b: Baglam = { veri, rng, model, olaylar: [], sayac: 0, suAn: zaman(BUGUN, 23, 59), zorluk };
   const plan = suAnPlani(b, rng);
-  b.suAn = plan.suAn;
 
   const eczaneGunleri = new Set([rng.tam(2, 13), ...(rng.sans(0.4) ? [rng.tam(2, 13)] : [])]);
   const kargoGunleri = new Set([rng.tam(1, 13), ...(rng.sans(0.5) ? [rng.tam(1, 13)] : [])]);
@@ -308,8 +305,21 @@ function rutinKur(veri: Veri, rng: Rng, model: HayatModeli, zorluk: Zorluk): { o
       paylasim: gun === paylasimGunu,
     });
   }
-  b.olaylar.sort((x, y) => zamanDakika(x.zaman) - zamanDakika(y.zaman) || x.id.localeCompare(y.id));
-  return { olaylar: b.olaylar, suAn: plan.suAn, hedefRol: plan.hedefRol, rutinDisi: plan.rutinDisi };
+  // Şu an: son günde hedef yerdeki konum olayının içinden seçilir, sonrası kesilir.
+  const hedefPoi = plan.hedefRol === "ev" ? model.ev.poi_id : plan.hedefRol === "is" ? model.is.poi_id : plan.hedefRol === "ucuncu" ? model.ucuncu.poi_id : plan.rutinDisi!.poi_id;
+  const adaylar = b.olaylar.filter((o) => o.tur === "konum" && o.zaman.gun === BUGUN && o.yer_poi_id === hedefPoi && o.bitis && zamanDakika(o.bitis) - zamanDakika(o.zaman) >= 20);
+  const kapsayan = plan.hedefRol === "ev" ? adaylar.filter((o) => o.zaman.saat >= 12).at(-1) : adaylar.at(-1);
+  if (!kapsayan) throw new UretimReddi("su_an_uyusmuyor");
+  const sure = zamanDakika(kapsayan.bitis!) - zamanDakika(kapsayan.zaman);
+  const suAn = ekle(kapsayan.zaman, rng.tam(Math.min(20, sure - 1), Math.min(sure - 1, plan.hedefRol === "is" ? 300 : 120)));
+  const kesik: Olay[] = [];
+  for (const o of b.olaylar) {
+    if (zamanDakika(o.zaman) > zamanDakika(suAn)) continue;
+    if (o.bitis && zamanDakika(o.bitis) > zamanDakika(suAn)) o.bitis = suAn;
+    kesik.push(o);
+  }
+  kesik.sort((x, y) => zamanDakika(x.zaman) - zamanDakika(y.zaman) || x.id.localeCompare(y.id));
+  return { olaylar: kesik, suAn, hedefRol: plan.hedefRol, rutinDisi: plan.rutinDisi };
 }
 
 // ---- Kayıt türetme ----------------------------------------------------------------------------
