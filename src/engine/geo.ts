@@ -59,3 +59,14 @@ export function koniIcinde(kamera: Konum, yon: number, aci: number, menzil: numb
   const fark = Math.abs(((yonDerece(kamera, n) - yon + 540) % 360) - 180);
   return fark <= aci / 2;
 }
+
+/** Kamera görüş konisi çokgeni (harita için). */
+export function koniCokgen(kamera: Konum, yon: number, aci: number, menzil: number, adim = 8): Konum[] {
+  const halka: Konum[] = [kamera];
+  for (let i = 0; i <= adim; i++) {
+    const a = ((yon - aci / 2 + (aci * i) / adim) * Math.PI) / 180;
+    halka.push([kamera[0] + (Math.sin(a) * menzil) / M_PER_DEG_LON, kamera[1] + (Math.cos(a) * menzil) / M_PER_DEG_LAT]);
+  }
+  halka.push(kamera);
+  return halka;
+}

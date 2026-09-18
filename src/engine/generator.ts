@@ -349,8 +349,11 @@ function alanDoldur(k: KayitBaglami, sensor: SensorTanimi, olay: Olay, poi: Poi 
       case "ilce": out[alan] = poi?.ilce ?? null; break;
       case "mahalle": out[alan] = poi?.mahalle ?? null; break;
       case "kategori": out[alan] = poi?.kategori ?? null; break;
-      case "gun": case "son_baglanti_gun": out[alan] = z.gun; break;
-      case "saat": case "son_baglanti_saat": out[alan] = `${String(z.saat).padStart(2, "0")}:${String(z.dakika).padStart(2, "0")}`; break;
+      case "gun": out[alan] = z.gun; break;
+      case "saat": out[alan] = `${String(z.saat).padStart(2, "0")}:${String(z.dakika).padStart(2, "0")}`; break;
+      // Son bağlantı: evde kalışın bitişi (ev boşaltıldığı an), hâlâ evdeyse şu an.
+      case "son_baglanti_gun": out[alan] = (olay.bitis ?? z).gun; break;
+      case "son_baglanti_saat": { const b = olay.bitis ?? z; out[alan] = `${String(b.saat).padStart(2, "0")}:${String(b.dakika).padStart(2, "0")}`; break; }
       case "kayit_yili": out[alan] = k.rng.tam(2004, 2024); break;
       case "abone_tipi": out[alan] = "mesken"; break;
       case "arac_var": out[alan] = k.model.arac_var ? "evet" : "hayır"; break;

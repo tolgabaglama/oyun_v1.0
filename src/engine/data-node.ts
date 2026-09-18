@@ -17,6 +17,8 @@ export function veriYukleNode(kok = process.cwd()): Veri {
     bazHucreleri: oku(p("baz_hucreleri_istanbul.geojson")),
     gecisler: oku(join(kok, "src/data/gecisler.json")),
     isimler: oku(join(kok, "src/data/isimler.json")),
+    ilceler: oku(p("ilceler_istanbul.geojson")),
+    mahalleler: oku(p("mahalleler_istanbul.geojson")),
   });
 }
 

@@ -10,6 +10,7 @@ export interface Kamera { kod: string; tur: string; konum: Konum; yon: number; k
 export interface Hucre { kod: string; ilce: string; alan_km2: number; komsular: string[]; cokgenler: Cokgenler; kutu: [number, number, number, number] }
 export interface Gecis { id: string; ad: string; tip: string; konum: Konum }
 export interface Isimler { adlar: string[]; soyadlar: string[] }
+export interface Bolge { ad: string; ilce: string | null; cokgenler: Cokgenler; kutu: [number, number, number, number] }
 
 export interface Veri {
   poiler: Poi[];
@@ -25,6 +26,9 @@ export interface Veri {
   gecisMap: Map<string, Gecis>;
   isimler: Isimler;
   ilceler: string[];
+  ilceBolgeleri: Map<string, Bolge>;
+  /** Anahtar "ilçe|mahalle". Aynı mahalle adı birden çok ilçede geçebilir. */
+  mahalleBolgeleri: Map<string, Bolge>;
 }
 
 /** Ham GeoJSON dosyaları, okuyucudan gelir. */
@@ -36,6 +40,8 @@ export interface HamVeri {
   bazHucreleri: GeoJSON;
   gecisler: { gecisler: Gecis[] };
   isimler: Isimler;
+  ilceler: GeoJSON;
+  mahalleler: GeoJSON;
 }
 
 interface GeoJSON { features: { geometry: { type: string; coordinates: unknown }; properties: Record<string, unknown> }[] }
@@ -72,13 +78,28 @@ export function veriKur(ham: HamVeri): Veri {
   });
 
   const ilceler = [...new Set(poiler.map((p) => p.ilce))].sort();
+
+  const bolgeYap = (f: GeoJSON["features"][number]): Bolge => {
+    const cokgenler = (f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates) as Cokgenler;
+    return { ad: String(f.properties.ad), ilce: null, cokgenler, kutu: kutu(cokgenler) };
+  };
+  const ilceBolgeleri = new Map<string, Bolge>();
+  for (const f of ham.ilceler.features) { const b = bolgeYap(f); b.ilce = b.ad; ilceBolgeleri.set(b.ad, b); }
+  // Mahallenin ilçesi: dış halkasının ilk köşesini içeren ilçe.
+  const mahalleBolgeleri = new Map<string, Bolge>();
+  for (const f of ham.mahalleler.features) {
+    const b = bolgeYap(f);
+    const kose = b.cokgenler[0][0][Math.floor(b.cokgenler[0][0].length / 2)];
+    for (const i of ilceBolgeleri.values()) if (kutuIcinde(kose, i.kutu) && cokgenlerIcinde(kose, i.cokgenler)) { b.ilce = i.ad; break; }
+    if (b.ilce) mahalleBolgeleri.set(`${b.ilce}|${b.ad}`, b);
+  }
   return {
     poiler, poiMap: new Map(poiler.map((p) => [p.id, p])), kategoriye,
     duraklar, durakMap: new Map(duraklar.map((d) => [d.id, d])),
     kameralar, kameraMap: new Map(kameralar.map((k) => [k.kod, k])),
     hucreler, hucreMap: new Map(hucreler.map((h) => [h.kod, h])),
     gecisler: ham.gecisler.gecisler, gecisMap: new Map(ham.gecisler.gecisler.map((g) => [g.id, g])),
-    isimler: ham.isimler, ilceler,
+    isimler: ham.isimler, ilceler, ilceBolgeleri, mahalleBolgeleri,
   };
 }
 
