@@ -1,0 +1,126 @@
+{
+  "kategoriler": {
+    "market": {
+      "ham": 6731,
+      "birlesik": 4047,
+      "il_icinde": 4047,
+      "kota": 260,
+      "secilen": 260
+    },
+    "eczane": {
+      "ham": 4608,
+      "birlesik": 2938,
+      "il_icinde": 2938,
+      "kota": 200,
+      "secilen": 200
+    },
+    "atm": {
+      "ham": 1829,
+      "birlesik": 717,
+      "il_icinde": 717,
+      "kota": 160,
+      "secilen": 160
+    },
+    "doviz": {
+      "ham": 204,
+      "birlesik": 146,
+      "il_icinde": 146,
+      "kota": 50,
+      "secilen": 50
+    },
+    "benzinlik": {
+      "ham": 798,
+      "birlesik": 724,
+      "il_icinde": 724,
+      "kota": 100,
+      "secilen": 100
+    },
+    "kargo": {
+      "ham": 387,
+      "birlesik": 355,
+      "il_icinde": 355,
+      "kota": 90,
+      "secilen": 90
+    },
+    "cami": {
+      "ham": 2779,
+      "birlesik": 2696,
+      "il_icinde": 2696,
+      "kota": 220,
+      "secilen": 220
+    },
+    "kahvehane": {
+      "ham": 411,
+      "birlesik": 344,
+      "il_icinde": 344,
+      "kota": 120,
+      "secilen": 120
+    },
+    "spor_salonu": {
+      "ham": 589,
+      "birlesik": 521,
+      "il_icinde": 520,
+      "kota": 80,
+      "secilen": 80
+    },
+    "otopark": {
+      "ham": 1351,
+      "birlesik": 808,
+      "il_icinde": 807,
+      "kota": 220,
+      "secilen": 220
+    }
+  },
+  "ilceler": {
+    "Adalar": 15,
+    "Arnavutköy": 32,
+    "Ataşehir": 49,
+    "Avcılar": 30,
+    "Bağcılar": 53,
+    "Bahçelievler": 30,
+    "Bakırköy": 33,
+    "Başakşehir": 35,
+    "Bayrampaşa": 32,
+    "Beşiktaş": 37,
+    "Beykoz": 30,
+    "Beylikdüzü": 26,
+    "Beyoğlu": 45,
+    "Büyükçekmece": 31,
+    "Çatalca": 24,
+    "Çekmeköy": 31,
+    "Esenler": 22,
+    "Esenyurt": 34,
+    "Eyüpsultan": 39,
+    "Fatih": 117,
+    "Gaziosmanpaşa": 31,
+    "Güngören": 23,
+    "Kadıköy": 75,
+    "Kâğıthane": 28,
+    "Kartal": 44,
+    "Küçükçekmece": 38,
+    "Maltepe": 43,
+    "Pendik": 60,
+    "Sancaktepe": 34,
+    "Sarıyer": 38,
+    "Şile": 19,
+    "Silivri": 33,
+    "Şişli": 41,
+    "Sultanbeyli": 38,
+    "Sultangazi": 30,
+    "Tuzla": 38,
+    "Ümraniye": 50,
+    "Üsküdar": 54,
+    "Zeytinburnu": 38
+  },
+  "atilan_disarida": 81,
+  "kahvehane_isim_eslesen": 411,
+  "otopark_ispark": 678,
+  "otopark_osm_adli": 673,
+  "durak_ham": 15387,
+  "durak_koordinat_atilan": 3,
+  "durak_tek_yon": 8766,
+  "poi_toplam": 1500,
+  "istasyon": 260,
+  "durak": 600,
+  "mahalle_atanamayan": 0
+}
