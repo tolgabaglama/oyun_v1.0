@@ -47,10 +47,10 @@
     "gecikmeli_kayit": "Kayıt saati gerçek olaydan 1 ila 3 saat sonra görünüyor."
   },
   "sert_kisit_tipleri": {
-    "hucre": "Şu anki konum, kayıttaki hücre veya komşularından birinin içindedir. Koşul: kayıt şu anki zamana yakın (telefon açık).",
-    "yaka": "Şu anki konum, son geçişin yönüne göre Avrupa veya Anadolu yakasındadır.",
-    "yaricap": "Şu anki konum, son kaydın noktasına belirtilen metre içinde. Koşul: kayıt yakın zamanlı.",
-    "aday_yer": "Şu anki konum, bu sensörün kayıtlarında geçen yerlerden biri olabilir. Tek başına daraltmaz, diğer kısıtlarla kesişir."
+    "hucre": "Konumlayıcı. Şu anki konum, kayıttaki hücre veya komşularından birinin içindedir. Koşul: kayıt şu anki zamana yakın (telefon açık) ya da tüm kayıtların birleşimi.",
+    "yaka": "Konumlayıcı. Şu anki konum, son geçişin yönüne göre Avrupa veya Anadolu yakasındadır. Yalnızca araçla seyahat eden hedefte geçerli.",
+    "yaricap": "Konumlayıcı. Şu anki konum, son kaydın noktasına belirtilen metre içinde. Koşul: kayıt yakın zamanlı.",
+    "aday_yer": "Daraltıcı. Şu anki konum bu sensörün kayıtlarında geçen yerlerden biri olabilir. Tek başına konum kanıtı değildir; en az bir konumlayıcı ile birlikte kullanılır ve konumlayıcının bölgesi içinde daraltır."
   },
   "sensorler": [
     {
@@ -150,9 +150,7 @@
           "olasilik": 0.35
         }
       ],
-      "sert_kisit": {
-        "tip": "aday_yer"
-      },
+      "sert_kisit": null,
       "parametreler": [],
       "kart_metni": "Abonelik adresi: {ilce} / {mahalle}. Abone tipi {abone_tipi}."
     },
@@ -254,7 +252,12 @@
       ],
       "gurultu": [],
       "sert_kisit": {
-        "tip": "yaka"
+        "tip": "yaka",
+        "kosul": {
+          "ulasim": [
+            "arac"
+          ]
+        }
       },
       "parametreler": [],
       "kart_metni": "{gun}. gün {saat}: {gecis_adi}, yön {yon}."
@@ -578,9 +581,7 @@
           "olasilik": 0.25
         }
       ],
-      "sert_kisit": {
-        "tip": "aday_yer"
-      },
+      "sert_kisit": null,
       "parametreler": [],
       "kart_metni": "Abonelik: {ilce} / {mahalle}. Son bağlantı {son_baglanti_gun}. gün {son_baglanti_saat}."
     },

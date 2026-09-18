@@ -48,6 +48,8 @@ export interface SertKisit {
   tum_kayitlar?: boolean;
   yakinlik_saat?: number;
   metre?: number;
+  /** Kısıtın geçerli olduğu gizli gerçek koşulu, ör. yalnızca araçla seyahat eden hedef. */
+  kosul?: { ulasim?: UlasimModu[] };
 }
 
 export interface SensorParametre {
