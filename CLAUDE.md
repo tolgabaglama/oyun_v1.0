@@ -93,7 +93,8 @@ Oracle: sadece sızdırılan verilerle hedef tek noktaya indirilebiliyor mu, en 
 ## 7. Veri kaynakları
 
 * OpenStreetMap (Overpass API): market, eczane, ATM, döviz, benzinlik, kargo şubesi, cami, kahvehane, spor salonu, otopark. Lisans ODbL, atıf zorunlu. Overpass sorguları Claude Code tarafından doğrudan çalıştırılabilir; sonuçlar data/raw altına GeoJSON olarak kaydedilir ve depoya girer, böylece tekrar indirmek gerekmez.
-* İBB Açık Veri Portalı (data.ibb.gov.tr): İETT durakları, raylı sistem istasyonları, İSPARK, mahalle sınırları. Portaldan indirme manuel gerekirse Tolga yapar ve data/raw altına koyar.
+* İBB Açık Veri Portalı (data.ibb.gov.tr): İETT durakları (GTFS stops), raylı sistem istasyonları, İSPARK. Portaldan indirme manuel gerekirse Tolga yapar ve data/raw altına koyar. Lisans: İBB Açık Veri Lisansı, atıf zorunlu.
+* İlçe ve mahalle sınırları: OpenStreetMap idari sınırları (ilçe seviye 6, mahalle seviye 8). İBB portalında sınır çokgeni bulunmadığı için 19 Eylül 2026'da Tolga'nın onayıyla OSM seçildi.
 * Harita karoları: Protomaps PMTiles İstanbul kesiti, çevrimdışı, anahtarsız. Tarayıcı prototipinde OpenFreeMap da kullanılabilir.
 * Kurgusal kameralar: kavşak, meydan, durak ve okul girişlerine kurallı yerleşim, yaklaşık 400 adet, görüş konisi yol yönünden hesaplanır.
 * Kurgusal baz hücreleri: yoğunluğa göre Voronoi, yaklaşık 250 hücre.
