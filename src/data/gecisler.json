@@ -1,0 +1,9 @@
+{
+  "aciklama": "HGS geçiş noktaları. Adlar kurgusal ve jenerik, konumlar gerçek boğaz geçişlerine yakındır. Yön alanı geçilen yakayı verir.",
+  "gecisler": [
+    { "id": "GC-1", "ad": "1. Boğaz Köprüsü", "tip": "kopru", "konum": [29.0350, 41.0455] },
+    { "id": "GC-2", "ad": "2. Boğaz Köprüsü", "tip": "kopru", "konum": [29.0630, 41.0910] },
+    { "id": "GC-3", "ad": "3. Boğaz Köprüsü", "tip": "kopru", "konum": [29.1120, 41.2010] },
+    { "id": "GC-4", "ad": "Boğaz Karayolu Tüneli", "tip": "tunel", "konum": [28.9990, 41.0000] }
+  ]
+}

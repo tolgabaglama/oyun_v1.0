@@ -1,0 +1,5 @@
+{
+  "aciklama": "Kurgusal isim havuzu. Sınırlı tutulur, adaş gürültüsü için aynı isimler tekrar kullanılır.",
+  "adlar": ["Mehmet", "Ayşe", "Hüseyin", "Fatma", "Serkan", "Zeynep", "Murat", "Elif", "Kadir", "Hatice", "Volkan", "Emine", "Cem", "Derya", "Erdal", "Selin", "Tolgahan", "Nurcan", "Burak", "Gülten", "Ferhat", "Sevgi", "Oktay", "Melek", "Recep", "Aslı", "Yılmaz", "Nihal", "Cengiz", "Sultan", "Barış", "Hilal", "Sadık", "Pınar", "Kenan", "Reyhan", "Levent", "Şule", "Halil", "Tuğba"],
+  "soyadlar": ["Yıldırım", "Kaya", "Demir", "Çelik", "Şahin", "Aydın", "Öztürk", "Arslan", "Doğan", "Kılıç", "Aslan", "Çetin", "Kara", "Koç", "Kurt", "Özdemir", "Polat", "Korkmaz", "Erdoğan", "Güneş", "Bulut", "Aktaş", "Sarı", "Yalçın", "Taş", "Uçar", "Turan", "Duman", "Bozkurt", "Keskin"]
+}
