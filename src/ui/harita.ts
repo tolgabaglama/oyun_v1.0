@@ -262,6 +262,11 @@ export class HaritaYoneticisi {
       }
       const kaynak = this.harita!.getSource("cizimler") as { setData: (d: unknown) => void } | undefined;
       kaynak?.setData({ type: "FeatureCollection", features });
+      // Çizim katmanları harita kurulurken eklendiği için sorgu katmanlarının altında kalır;
+      // oyuncunun kendi işaretleri ve gerçek konum her zaman en üstte görünmelidir.
+      for (const id of ["dislama-dolgu", "dislama-cizgi", "tahmin-halka", "raptiye-nokta", "gercek-nokta"]) {
+        if (this.harita!.getLayer(id)) this.harita!.moveLayer(id);
+      }
     });
   }
 

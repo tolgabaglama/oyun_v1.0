@@ -4,6 +4,7 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import { el, temizle } from "./dom.ts";
 import { anaEkran } from "./ekran-ana.ts";
+import { ekranTurSonu } from "./ekran-tur-sonu.ts";
 import { sekmeCubugu, ustSeritCiz, type SekmeKimligi } from "./kabuk.ts";
 import { sekmeDosya } from "./sekme-dosya.ts";
 import { sekmeSorgu, sonucPenceresi } from "./sekme-sorgu.ts";
@@ -17,7 +18,7 @@ import { ZORLUK_ADLARI, type Konum, type SonucGorunumu, type TahminGorunumu, typ
 import type { Veri } from "../engine/data.ts";
 import type { SensorKatalogu } from "../engine/schema.ts";
 
-type Ekran = "ana" | "tur";
+type Ekran = "ana" | "tur" | "tur_sonu";
 
 interface Uygulama {
   veri: Veri;
@@ -261,7 +262,11 @@ function tahminSonucPenceresi(t: TahminGorunumu): HTMLElement {
         !t.dogru && el("p", {}, t.kalan_hak > 0 ? `250 puan ceza uygulandı. Bir tahmin hakkınız kaldı.` : "İkinci yanlış tahmin, tur kapandı."),
       ),
       el("div", { sinif: "dugme-sira" },
-        el("button", { type: "button", sinif: "birincil", onclick: kapat }, t.sonuc === "devam" ? "Devam et" : "Tur sonucunu gör"),
+        el("button", { type: "button", sinif: "birincil", onclick: () => {
+          acikTahmin = null;
+          if (t.sonuc !== "devam") uyg.ekran = "tur_sonu";
+          ciz();
+        } }, t.sonuc === "devam" ? "Devam et" : "Tur sonucunu gör"),
       ),
     ),
   );
@@ -293,6 +298,8 @@ function turEkrani(): HTMLElement {
   const ekran = el("div", { sinif: "ekran tur-ekrani" },
     ustSeritCiz(o.ustSerit(), anaEkranaDon),
     sekmeIcerigi(uyg.sekme),
+    o.bitti() && el("button", { sinif: "sonuc-serit", type: "button", onclick: () => { uyg.ekran = "tur_sonu"; ciz(); } },
+      "Tur bitti, sonucu gör"),
     sekmeCubugu(uyg.sekme, (id) => {
       uyg.sekme = id;
       kaydet();
@@ -315,6 +322,28 @@ function turEkrani(): HTMLElement {
 }
 
 function ciz(): void {
+  if (uyg.ekran === "tur_sonu" && uyg.oturum) {
+    const o = uyg.oturum;
+    temizle(kok, ekranTurSonu({
+      ozet: o.turSonu(),
+      hedefAdi: o.dosya().ad,
+      onHaritayiIncele: () => {
+        uyg.ekran = "tur";
+        uyg.sekme = "harita";
+        ciz();
+        // Gerçek konum haritada işaretlidir; oraya yaklaşılır.
+        setTimeout(() => harita?.merkezle(o.turSonu().gercek_konum, 14), 50);
+      },
+      onYeniDava: () => {
+        turSil();
+        uyg.oturum = null;
+        uyg.ekran = "ana";
+        ciz();
+      },
+      onAnaEkran: anaEkranaDon,
+    }));
+    return;
+  }
   if (uyg.ekran === "tur" && uyg.oturum) {
     temizle(kok, turEkrani());
     return;
@@ -324,6 +353,7 @@ function ciz(): void {
   let devamOzeti = "";
   if (kayit) {
     devamOzeti = `Dava ${kayit.seed}, ${ZORLUK_ADLARI[kayit.zorluk]}, ${kayit.sorgular.length} sorgu yapılmış.`;
+    if (kayit.tahminler.length) devamOzeti += ` ${kayit.tahminler.length} tahmin kullanılmış.`;
   }
   temizle(kok, anaEkran({
     sonZorluk: (ayar.son_zorluk as Zorluk) ?? "standart",
@@ -336,7 +366,7 @@ function ciz(): void {
       try {
         uyg.oturum = Oturum.yukle(kayit, uyg.veri, uyg.katalog);
         uyg.sekme = (uyg.oturum.aktifSekme as SekmeKimligi) ?? "dosya";
-        uyg.ekran = "tur";
+        uyg.ekran = uyg.oturum.bitti() ? "tur_sonu" : "tur";
         ciz();
       } catch (e) {
         turSil();
