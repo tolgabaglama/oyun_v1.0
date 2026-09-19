@@ -133,6 +133,7 @@ Oracle: sadece sızdırılan verilerle hedef tek noktaya indirilebiliyor mu, en 
 /data/processed/      süzülmüş POI, kamera, hücre dosyaları
 /scripts/             veri süzme ve üretim betikleri
 /src/engine/          üretici, oracle, sensör kataloğu, puanlama
+/src/app/             motor ile arayüz arasındaki ince katman (oturum, görünüm tipleri, yerel depolama)
 /src/ui/              ekranlar, katman yönetimi, harita
 /src/data/            sensör tanımları, isim havuzu
 /tests/
