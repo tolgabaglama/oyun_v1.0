@@ -6,10 +6,11 @@ import { el, temizle } from "./dom.ts";
 import { anaEkran } from "./ekran-ana.ts";
 import { sekmeCubugu, ustSeritCiz, type SekmeKimligi } from "./kabuk.ts";
 import { sekmeDosya } from "./sekme-dosya.ts";
+import { sekmeSorgu, sonucPenceresi } from "./sekme-sorgu.ts";
 import { veriYukleWeb, katalogYukleWeb } from "../engine/data-web.ts";
 import { DavaBulunamadi, Oturum } from "../app/oturum.ts";
 import { ayarOku, ayarYaz, turOku, turSil, turYaz } from "../app/depo.ts";
-import { ZORLUK_ADLARI, type Zorluk } from "../app/gorunum.ts";
+import { ZORLUK_ADLARI, type SonucGorunumu, type Zorluk } from "../app/gorunum.ts";
 import type { Veri } from "../engine/data.ts";
 import type { SensorKatalogu } from "../engine/schema.ts";
 
@@ -61,6 +62,28 @@ function hataGoster(mesaj: string): void {
 
 /** Vurgulanacak sorgu; DOSYA sekmesinden PANO'ya geçerken kullanılır. */
 let vurguluSorgu: string | null = null;
+/** Sorgu sonrası gösterilecek sonuç penceresi. */
+let acikSonuc: SonucGorunumu | null = null;
+/** Haritadan nokta bekleyen sorgu. Harita sekmesi seçim yapınca tamamlanır. */
+export let bekleyenSorgu: { sensorId: string; parametreler: Record<string, string | number> } | null = null;
+
+export function bekleyenSorguyuTamamla(poiId: string): void {
+  if (!bekleyenSorgu || !uyg.oturum) return;
+  const { sensorId, parametreler } = bekleyenSorgu;
+  bekleyenSorgu = null;
+  try {
+    acikSonuc = uyg.oturum.sorgula(sensorId, { ...parametreler, poi_id: poiId });
+  } catch (e) {
+    hataGoster((e as Error).message);
+  }
+  kaydet();
+  ciz();
+}
+
+export function bekleyenSorguyuIptal(): void {
+  bekleyenSorgu = null;
+  ciz();
+}
 
 function sekmeIcerigi(sekme: SekmeKimligi): HTMLElement {
   const o = uyg.oturum!;
@@ -77,6 +100,26 @@ function sekmeIcerigi(sekme: SekmeKimligi): HTMLElement {
       },
     });
   }
+  if (sekme === "sorgu") {
+    return sekmeSorgu({
+      sensorler: o.sensorler(),
+      turBitti: o.bitti(),
+      onSorgula: (sensorId, parametreler) => {
+        const sonuc = o.sorgula(sensorId, parametreler);
+        acikSonuc = sonuc;
+        kaydet();
+        // Pencere kapandıktan sonra sonuç penceresiyle yeniden çizilir.
+        setTimeout(ciz, 0);
+        return sonuc;
+      },
+      onNoktaSec: (sensorId, mevcut) => {
+        bekleyenSorgu = { sensorId, parametreler: mevcut };
+        uyg.sekme = "harita";
+        kaydet();
+        ciz();
+      },
+    });
+  }
   return el("div", { sinif: "sekme-icerik yer-tutucu" },
     el("p", {}, `${sekme.toUpperCase()} sekmesi bir sonraki adımda eklenecek.`),
   );
@@ -84,7 +127,7 @@ function sekmeIcerigi(sekme: SekmeKimligi): HTMLElement {
 
 function turEkrani(): HTMLElement {
   const o = uyg.oturum!;
-  return el("div", { sinif: "ekran tur-ekrani" },
+  const ekran = el("div", { sinif: "ekran tur-ekrani" },
     ustSeritCiz(o.ustSerit(), anaEkranaDon),
     sekmeIcerigi(uyg.sekme),
     sekmeCubugu(uyg.sekme, (id) => {
@@ -93,6 +136,16 @@ function turEkrani(): HTMLElement {
       ciz();
     }),
   );
+  if (acikSonuc) {
+    const sonuc = acikSonuc;
+    ekran.append(sonucPenceresi(sonuc, () => { acikSonuc = null; ciz(); }, (sorguId) => {
+      vurguluSorgu = sorguId;
+      uyg.sekme = "harita";
+      kaydet();
+      ciz();
+    }));
+  }
+  return ekran;
 }
 
 function ciz(): void {

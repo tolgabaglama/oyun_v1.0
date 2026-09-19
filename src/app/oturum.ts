@@ -51,6 +51,20 @@ const PARAMETRE_ETIKETLERI: Record<string, string> = {
 
 const VARYANT_ADLARI: Record<string, string> = { tek: "tek sorgu", dar: "dar", genis: "geniş" };
 
+const AYAK_IZI_ADLARI: Record<string, string> = {
+  nokta: "nokta",
+  adres: "adres",
+  hucre: "baz hücresi",
+  koni: "kamera konisi",
+  guzergah: "güzergâh",
+};
+
+function kapsamMetni(s: SensorTanimi): string {
+  if (s.kapsam.tip === "sabit") return "sabit kayıt";
+  if (s.kapsam.tip === "son") return "yalnızca son kayıt";
+  return `son ${s.kapsam.gun ?? 14} gün`;
+}
+
 export class Oturum {
   private durum: TurDurumu;
   private sonuclar: SonucGorunumu[] = [];
@@ -181,6 +195,8 @@ export class Oturum {
         kademe: s.kademe,
         maliyet: s.maliyet,
         varyant: VARYANT_ADLARI[s.varyant] ?? s.varyant,
+        kapsam_metni: kapsamMetni(s),
+        ayak_izi_metni: AYAK_IZI_ADLARI[s.ayak_izi] ?? s.ayak_izi,
         es_varyant: es ? { id: es.id, ad: es.ad, maliyet: es.maliyet } : null,
         parametreler: this.parametreGorunumu(s),
         sorulmus: sorulmusIdler.has(s.id),

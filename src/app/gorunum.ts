@@ -34,6 +34,10 @@ export interface SensorGorunumu {
   maliyet: number;
   /** "tek", "dar" veya "geniş" etiketi; eş varyantın adı ve maliyeti. */
   varyant: string;
+  /** Sorgunun neyi kapsadığı, ör. "son kayıt" veya "son 14 gün". */
+  kapsam_metni: string;
+  /** Haritada nasıl görüneceği, ör. "nokta" veya "baz hücresi". */
+  ayak_izi_metni: string;
   es_varyant: { id: string; ad: string; maliyet: number } | null;
   /** Sorgudan önce doldurulması gereken alanlar. */
   parametreler: ParametreGorunumu[];
@@ -42,6 +46,13 @@ export interface SensorGorunumu {
   /** Zorluk yüzünden kapalıysa sebebi. */
   kapali_sebep: string | null;
 }
+
+export const KADEME_ADLARI: Record<number, string> = {
+  1: "Açık ve idari kayıt",
+  2: "Hizmet kayıtları",
+  3: "Mahrem veri",
+  4: "Ağır döküm",
+};
 
 export interface ParametreGorunumu {
   ad: string;
