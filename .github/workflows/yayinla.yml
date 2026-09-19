@@ -1,0 +1,62 @@
+# main dalına her push'ta oyunu derler ve GitHub Pages üzerinde yayınlar.
+name: Yayınla
+
+on:
+  push:
+    branches: [main]
+  # Elle de çalıştırılabilsin.
+  workflow_dispatch:
+
+# Pages'e yazma izni ve dağıtım kimliği.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Aynı anda tek yayın çalışsın; sıradaki push beklesin.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  derle:
+    name: Derle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
+      - name: Node kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Bağımlılıkları kur
+        run: npm ci
+
+      - name: Motor testleri
+        run: npm test
+
+      - name: Derle
+        run: npm run build
+
+      - name: Pages yapılandırması
+        uses: actions/configure-pages@v5
+
+      - name: Çıktıyı yükle
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  yayinla:
+    name: Yayınla
+    needs: derle
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.dagitim.outputs.page_url }}
+    steps:
+      - name: Pages'e dağıt
+        id: dagitim
+        uses: actions/deploy-pages@v4
