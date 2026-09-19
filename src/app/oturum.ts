@@ -9,9 +9,9 @@ import { parHesapla, OracleReddi } from "../engine/oracle.ts";
 import { kullanilabilirSensorler, sensorBul, SorguHatasi, type SorguParametreleri } from "../engine/query.ts";
 import { adaySayisi, sorguYap, tahminYap, turBaslat, turOzeti, TAVAN_PUAN, YANLIS_CEZASI, type TurDurumu } from "../engine/scoring.ts";
 import {
-  KATEGORI_ADLARI, ZORLUK_ADLARI,
+  KAMERA_TUR_ADLARI, KATEGORI_ADLARI, ZORLUK_ADLARI,
   type DislamaDairesi, type DosyaGorunumu, type Konum, type NoktaGorunumu, type ParametreGorunumu,
-  type Raptiye, type SensorGorunumu, type SonucGorunumu, type TahminGorunumu, type TurSonuGorunumu,
+  type KameraGorunumu, type Raptiye, type SensorGorunumu, type SonucGorunumu, type TahminGorunumu, type TurSonuGorunumu,
   type UstSerit, type Zorluk,
 } from "./gorunum.ts";
 
@@ -154,12 +154,15 @@ export class Oturum {
 
   dosya(): DosyaGorunumu {
     const p = this.dava.profil;
+    const z = this.dava.gercek.su_anki_zaman;
     return {
       ad: `${p.ad} ${p.soyad}`,
       yas: p.yas,
       ihbar_notu: p.ihbar_notu,
       seed: this.dava.seed,
       zorluk_adi: ZORLUK_ADLARI[this.dava.zorluk as Zorluk],
+      su_an_metni: `${z.gun}. gün, saat ${String(z.saat).padStart(2, "0")}:${String(z.dakika).padStart(2, "0")}`,
+      su_an_gun: z.gun,
     };
   }
 
@@ -173,10 +176,15 @@ export class Oturum {
       };
       if (p.tip === "ilce") g.secenekler = this.veri.ilceler.map((i) => ({ deger: i, etiket: i }));
       if (p.tip === "gun") g.secenekler = Array.from({ length: 14 }, (_, i) => ({ deger: String(i + 1), etiket: `${i + 1}. gün` }));
-      if (p.tip === "saat") g.secenekler = Array.from({ length: 25 }, (_, i) => {
-        const s = String(Math.min(23, i)).padStart(2, "0");
-        return { deger: i === 24 ? "23:59" : `${s}:00`, etiket: i === 24 ? "23:59" : `${s}:00` };
-      });
+      if (p.tip === "saat") {
+        g.secenekler = Array.from({ length: 25 }, (_, i) => {
+          const s = String(Math.min(23, i)).padStart(2, "0");
+          return { deger: i === 24 ? "23:59" : `${s}:00`, etiket: i === 24 ? "23:59" : `${s}:00` };
+        });
+        // Varsayılan aralık tüm günü kapsasın; oyuncu daraltmak isterse değiştirir.
+        g.varsayilan = p.ad === "saat_bitis" ? "23:59" : "00:00";
+      }
+      if (p.tip === "gun") g.varsayilan = "14";
       return g;
     });
   }
@@ -184,7 +192,8 @@ export class Oturum {
   /** Sorgu sekmesi listesi, kademe sırasına göre. */
   sensorler(): SensorGorunumu[] {
     const acik = new Set(kullanilabilirSensorler(this.katalog, this.dava.zorluk).map((s) => s.id));
-    const sorulmusIdler = new Set(this.durum.sorgular.map((s) => s.sensor_id));
+    const sayimlar = new Map<string, number>();
+    for (const s of this.durum.sorgular) sayimlar.set(s.sensor_id, (sayimlar.get(s.sensor_id) ?? 0) + 1);
     return this.katalog.sensorler.map((s) => {
       const esId = Array.isArray(s.es_varyant) ? null : s.es_varyant;
       const es = esId ? this.katalog.sensorler.find((x) => x.id === esId) : null;
@@ -199,10 +208,20 @@ export class Oturum {
         ayak_izi_metni: AYAK_IZI_ADLARI[s.ayak_izi] ?? s.ayak_izi,
         es_varyant: es ? { id: es.id, ad: es.ad, maliyet: es.maliyet } : null,
         parametreler: this.parametreGorunumu(s),
-        sorulmus: sorulmusIdler.has(s.id),
+        // Parametreli sensörde her farklı nokta veya zaman aralığı yeni sorgudur.
+        sorulmus: s.parametreler.length === 0 && this.ucretsizMi(s.id),
+        yapilan_sorgu_sayisi: sayimlar.get(s.id) ?? 0,
         kapali_sebep: acik.has(s.id) ? null : "Uzman zorlukta kademe 4 kapalıdır",
       };
     });
+  }
+
+  /** Bir sorgu daha önce aynı parametrelerle yapıldıysa tekrarı ücretsizdir. */
+  ucretsizMi(sensorId: string, parametreler: SorguParametreleri = {}): boolean {
+    const anahtar = (id: string, p: SorguParametreleri) =>
+      `${id}|${Object.keys(p).sort().map((k) => `${k}=${p[k]}`).join("&")}`;
+    const hedef = anahtar(sensorId, parametreler);
+    return this.durum.sorgular.some((s) => anahtar(s.sensor_id, s.parametreler) === hedef);
   }
 
   /** Yapılmış sorguların sonuçları, en yeniden eskiye. */
@@ -216,6 +235,15 @@ export class Oturum {
   }
 
   noktalar(): NoktaGorunumu[] {
+    // Kamera kapsaması sensör tanımındaki kategori oranından okunur; hedefe bağlı değildir.
+    const kapsama = this.katalog.sensorler.find((s) => s.id === "ozel_kamera_dar")?.kapsama;
+    const durum = (kategori: string): string => {
+      if (!kapsama) return "bilinmiyor";
+      const oran = kapsama.oranlar[kategori] ?? kapsama.varsayilan;
+      if (oran >= 1) return "Kamera her zaman var";
+      if (oran <= 0) return "Özel kamera talebi kabul edilmez";
+      return "Kamera bulunma ihtimali orta";
+    };
     return this.veri.poiler.map((p) => ({
       id: p.id,
       kategori: p.kategori,
@@ -223,7 +251,30 @@ export class Oturum {
       ilce: p.ilce,
       mahalle: p.mahalle,
       konum: p.konum,
+      kamera_durumu: durum(p.kategori),
     }));
+  }
+
+  kameralar(): KameraGorunumu[] {
+    return this.veri.kameralar.map((k) => ({
+      kod: k.kod,
+      tur: k.tur,
+      tur_adi: KAMERA_TUR_ADLARI[k.tur] ?? k.tur,
+      ilce: k.ilce,
+      yol_adi: k.yol_adi,
+      yon: k.yon,
+      konum: k.konum,
+    }));
+  }
+
+  /** Seçilen bir noktanın veya kameranın onay ekranında gösterilecek adı. */
+  secimAdi(tip: "poi" | "kamera", id: string): string {
+    if (tip === "kamera") {
+      const k = this.veri.kameraMap.get(id);
+      return k ? `${k.kod} · ${KAMERA_TUR_ADLARI[k.tur] ?? k.tur} · ${k.yol_adi ?? "yol adı yok"} · ${k.ilce}` : id;
+    }
+    const p = this.veri.poiMap.get(id);
+    return p ? `${KATEGORI_ADLARI[p.kategori] ?? p.kategori} · ${p.ilce}${p.mahalle ? ` / ${p.mahalle}` : ""}` : id;
   }
 
   // ---- Eylemler ------------------------------------------------------------------------------
@@ -261,6 +312,8 @@ export class Oturum {
         metin: k.metin,
         gun: k.zaman.gun,
         saat: `${String(k.zaman.saat).padStart(2, "0")}:${String(k.zaman.dakika).padStart(2, "0")}`,
+        gorece_zaman: k.gorece_zaman,
+        konum_metni: k.konum_metni,
         sensor_id: k.sensor_id,
       })),
       katman: {

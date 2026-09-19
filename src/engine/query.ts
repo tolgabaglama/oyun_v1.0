@@ -16,6 +16,9 @@ export interface GorunurKayit {
   alanlar: Kayit["alanlar"];
   /** Kart metni şablonu doldurulmuş hali. */
   metin: string;
+  /** Kaydın işaret ettiği ilçe ve mahalle. */
+  konum_metni: string | null;
+  gorece_zaman: string | null;
   geometri: Kayit["geometri"];
 }
 
@@ -67,15 +70,73 @@ function saatDakika(metin: string): number {
   return s * 60 + (d || 0);
 }
 
+/** Kayıt anlamlı bilgi taşımıyor mu (ör. araç yokken tescil kaydı). */
+export function bosKayit(sensor: SensorTanimi, kayit: Kayit): boolean {
+  const k = sensor.bos_kosulu;
+  return Boolean(k && kayit.alanlar[k.alan] === k.deger);
+}
+
 export function kartMetni(sensor: SensorTanimi, kayit: Kayit): string {
+  if (bosKayit(sensor, kayit)) return sensor.bos_metni ?? "Kayıt yok.";
   return sensor.kart_metni.replace(/\{(\w+)\}/g, (_, alan: string) => {
     const v = kayit.alanlar[alan];
     return v === null || v === undefined ? "bilinmiyor" : String(v);
   });
 }
 
-function gorunur(sensor: SensorTanimi, k: Kayit): GorunurKayit {
-  return { id: k.id, sensor_id: k.sensor_id, zaman: k.zaman, alanlar: k.alanlar, metin: kartMetni(sensor, k), geometri: k.geometri };
+/** Kaydın işaret ettiği yerin idari adı. Oyuncu durak veya nokta adından ilçeyi bilemez. */
+export function konumMetni(veri: Veri, kayit: Kayit): string | null {
+  const alanIlce = kayit.alanlar.ilce as string | null | undefined;
+  const alanMahalle = kayit.alanlar.mahalle as string | null | undefined;
+  if (alanIlce) return alanMahalle ? `${alanIlce} / ${alanMahalle}` : alanIlce;
+
+  const g = kayit.geometri;
+  if (!g) return null;
+  switch (g.tip) {
+    case "poi": {
+      const p = veri.poiMap.get(g.id);
+      return p ? (p.mahalle ? `${p.ilce} / ${p.mahalle}` : p.ilce) : null;
+    }
+    case "durak": case "istasyon": {
+      const d = veri.durakMap.get(g.id);
+      return d ? d.ilce : null;
+    }
+    case "kamera": {
+      const k = veri.kameraMap.get(g.id);
+      return k ? k.ilce : null;
+    }
+    case "hucre": {
+      const h = veri.hucreMap.get(g.id);
+      return h ? `${h.ilce} çevresi` : null;
+    }
+    case "gecis": {
+      const gc = veri.gecisMap.get(g.id);
+      return gc ? gc.ad : null;
+    }
+    default:
+      return null;
+  }
+}
+
+/** Şu ana göre okunur zaman. Sabit kayıtların (nüfus, tescil) zamanı anlamsızdır, null döner. */
+export function goreceZaman(kayit: Zaman, suAn: Zaman): string {
+  const saat = `${String(kayit.saat).padStart(2, "0")}:${String(kayit.dakika).padStart(2, "0")}`;
+  const fark = suAn.gun - kayit.gun;
+  if (fark <= 0) return `bugün ${saat}`;
+  if (fark === 1) return `dün ${saat}`;
+  return `${fark} gün önce ${saat}`;
+}
+
+function gorunur(sensor: SensorTanimi, k: Kayit, veri: Veri, suAn: Zaman): GorunurKayit {
+  const bos = bosKayit(sensor, k);
+  return {
+    id: k.id, sensor_id: k.sensor_id, zaman: k.zaman, alanlar: k.alanlar,
+    metin: kartMetni(sensor, k),
+    konum_metni: bos ? null : konumMetni(veri, k),
+    gorece_zaman: sensor.kapsam.tip === "sabit" ? null : goreceZaman(k.zaman, suAn),
+    // Anlamsız kayıt haritada yer kaplamaz.
+    geometri: bos ? null : k.geometri,
+  };
 }
 
 /** Parametreleri denetler ve kayıtları parametre tipine göre süzer. */
@@ -212,7 +273,9 @@ export function sorgula(dava: Dava, veri: Veri, katalog: SensorKatalogu, sensorI
 
   const ham = dava.kayitlar.filter((k) => k.sensor_id === sensorId);
   const kayitlar = parametreleriUygula(sensor, veri, ham, parametreler).slice().sort((a, b) => zamanDakika(a.zaman) - zamanDakika(b.zaman));
-  const katman: Katman = { type: "FeatureCollection", features: KATMAN_KURUCULAR[sensor.ayak_izi](sensor, veri, kayitlar, parametreler) };
+  // Anlamsız kayıtlar (ör. araç yok) haritaya çizilmez.
+  const cizilecek = kayitlar.filter((k) => !bosKayit(sensor, k));
+  const katman: Katman = { type: "FeatureCollection", features: KATMAN_KURUCULAR[sensor.ayak_izi](sensor, veri, cizilecek, parametreler) };
   const bos = kayitlar.length === 0;
   const aciklama = bos
     ? (sensor.ayak_izi === "koni" ? "Eşleşme yok." : "Kayıt bulunamadı.")
@@ -220,6 +283,6 @@ export function sorgula(dava: Dava, veri: Veri, katalog: SensorKatalogu, sensorI
 
   return {
     sensor_id: sensor.id, sensor_adi: sensor.ad, kurum: sensor.kurum, ayak_izi: sensor.ayak_izi, maliyet: sensor.maliyet,
-    parametreler, kayitlar: kayitlar.map((k) => gorunur(sensor, k)), katman, bos, aciklama,
+    parametreler, kayitlar: kayitlar.map((k) => gorunur(sensor, k, veri, dava.gercek.su_anki_zaman)), katman, bos, aciklama,
   };
 }

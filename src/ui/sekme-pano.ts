@@ -4,8 +4,12 @@
 import { el } from "./dom.ts";
 import type { SonucGorunumu } from "../app/gorunum.ts";
 
+export type PanoSiralamasi = "sensore_gore" | "kronolojik";
+
 export interface PanoSekmesiSecenekleri {
   gecmis: SonucGorunumu[];
+  siralama: PanoSiralamasi;
+  onSiralamaDegis: (s: PanoSiralamasi) => void;
   notlar: string;
   /** Not değişince çağrılır; ekran yeniden çizilmez, yalnızca kaydedilir. */
   onNotDegisti: (metin: string) => void;
@@ -28,6 +32,39 @@ export function sekmePano(s: PanoSekmesiSecenekleri): HTMLElement {
   });
   notKutusu.value = s.notlar;
 
+  const siralamaCubugu = el("div", { sinif: "siralama-cubugu" },
+    el("span", { sinif: "siralama-etiket" }, "SIRALAMA"),
+    el("button", {
+      type: "button", sinif: "siralama-dugme" + (s.siralama === "sensore_gore" ? " aktif" : ""),
+      onclick: () => s.onSiralamaDegis("sensore_gore"),
+    }, "Sensöre göre"),
+    el("button", {
+      type: "button", sinif: "siralama-dugme" + (s.siralama === "kronolojik" ? " aktif" : ""),
+      onclick: () => s.onSiralamaDegis("kronolojik"),
+    }, "Zaman sırası"),
+  );
+
+  // Kronolojik görünüm: tüm sorguların kayıtları tek listede, en yeni kayıt üstte.
+  const kronolojikListe = () => {
+    const hepsi = s.gecmis.flatMap((g) => g.kayitlar.map((k) => ({ k, g })));
+    hepsi.sort((a, b) => b.k.gun - a.k.gun || b.k.saat.localeCompare(a.k.saat));
+    if (!hepsi.length) return el("p", { sinif: "bos-metin orta" }, "Kayıt yok.");
+    return el("table", { sinif: "kayit-tablo kronolojik" },
+      el("tbody", {},
+        ...hepsi.map(({ k, g }) =>
+          el("tr", {},
+            el("td", { sinif: "kayit-zaman" }, k.gorece_zaman ?? "sabit kayıt"),
+            el("td", { sinif: "kayit-metin" },
+              el("span", { sinif: "kayit-kaynak" }, g.sorgu_id),
+              el("span", {}, kisaMetin(k.metin)),
+              k.konum_metni && el("span", { sinif: "kayit-konum" }, k.konum_metni),
+            ),
+          ),
+        ),
+      ),
+    );
+  };
+
   // Geçmiş en yeniden eskiye gelir; pano da öyle gösterir, en son sorgu en üstte.
   const bloklar = s.gecmis.map((g) => {
     const kayitlar = [...g.kayitlar].sort((a, b) => a.gun - b.gun || a.saat.localeCompare(b.saat));
@@ -46,9 +83,11 @@ export function sekmePano(s: PanoSekmesiSecenekleri): HTMLElement {
             el("tbody", {},
               ...kayitlar.map((k) =>
                 el("tr", {},
-                  el("td", { sinif: "kayit-zaman" }, `${k.gun}. gün`),
-                  el("td", { sinif: "kayit-saat" }, k.saat),
-                  el("td", { sinif: "kayit-metin" }, kisaMetin(k.metin)),
+                  el("td", { sinif: "kayit-zaman" }, k.gorece_zaman ?? "sabit"),
+                  el("td", { sinif: "kayit-metin" },
+                    el("span", {}, kisaMetin(k.metin)),
+                    k.konum_metni && el("span", { sinif: "kayit-konum" }, k.konum_metni),
+                  ),
                 ),
               ),
             ),
@@ -65,7 +104,10 @@ export function sekmePano(s: PanoSekmesiSecenekleri): HTMLElement {
     ),
     s.gecmis.length === 0
       ? el("p", { sinif: "bos-metin orta" }, "Pano boş. SORGU sekmesinden bir sorgu yapın.")
-      : el("div", { sinif: "pano-listesi" }, ...bloklar),
+      : el("div", {}, siralamaCubugu,
+          s.siralama === "kronolojik"
+            ? el("div", { sinif: "pano-listesi" }, el("section", { sinif: "pano-blok" }, kronolojikListe()))
+            : el("div", { sinif: "pano-listesi" }, ...bloklar)),
   );
 
   if (s.vurgulu) {

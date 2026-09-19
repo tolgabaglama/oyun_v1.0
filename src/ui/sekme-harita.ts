@@ -13,10 +13,12 @@ export interface HaritaSekmesiSecenekleri {
   dislamalar: DislamaDairesi[];
   mod: HaritaModu;
   noktalarGorunur: boolean;
-  /** Nokta seçimi bekleyen sorgunun adı; yoksa null. */
+  kameralarGorunur: boolean;
+  /** Seçim bekleyen sorgunun adı; yoksa null. */
   bekleyenSorguAdi: string | null;
   onKatmanDegis: (sorguId: string, gorunur: boolean) => void;
   onNoktalarDegis: (gorunur: boolean) => void;
+  onKameralarDegis: (gorunur: boolean) => void;
   onModDegis: (mod: HaritaModu) => void;
   onKatmanaGit: (sorguId: string) => void;
   onRaptiyeSil: (id: string) => void;
@@ -26,8 +28,9 @@ export interface HaritaSekmesiSecenekleri {
 }
 
 const MOD_ACIKLAMALARI: Record<HaritaModu, string> = {
-  gez: "Tahmin için haritaya uzun basın.",
+  gez: "Noktaya dokununca künyesi açılır. Tahmin için haritaya uzun basın.",
   nokta_secim: "Sorgulanacak noktaya dokunun.",
+  kamera_secim: "Sorgulanacak kameraya dokunun.",
   raptiye: "Raptiye koymak için haritaya dokunun.",
   dislama: "Dışlama dairesi: önce merkeze, sonra kenarına dokunun.",
 };
@@ -43,6 +46,14 @@ export function sekmeHarita(s: HaritaSekmesiSecenekleri): HTMLElement {
         }),
         el("span", { sinif: "katman-renk", style: "background:#9e9e9e" }),
         el("span", { sinif: "katman-ad" }, "Tüm noktalar"),
+      ),
+      el("label", { sinif: "katman-satiri" },
+        el("input", {
+          type: "checkbox", checked: s.kameralarGorunur,
+          onchange: (e: Event) => s.onKameralarDegis((e.currentTarget as HTMLInputElement).checked),
+        }),
+        el("span", { sinif: "katman-renk", style: "background:#b71c1c" }),
+        el("span", { sinif: "katman-ad" }, "ŞEHİRGÖZ kameraları"),
       ),
       ...(s.gecmis.length
         ? s.gecmis.map((g) =>
@@ -79,7 +90,7 @@ export function sekmeHarita(s: HaritaSekmesiSecenekleri): HTMLElement {
     el("button", {
       type: "button",
       sinif: "arac-dugme" + (s.mod === mod ? " aktif" : ""),
-      disabled: s.turBitti || s.mod === "nokta_secim",
+      disabled: s.turBitti || s.mod === "nokta_secim" || s.mod === "kamera_secim",
       onclick: () => s.onModDegis(s.mod === mod ? "gez" : mod),
     }, etiket);
 
@@ -87,7 +98,7 @@ export function sekmeHarita(s: HaritaSekmesiSecenekleri): HTMLElement {
     el("div", { sinif: "harita-arac" },
       s.bekleyenSorguAdi
         ? el("div", { sinif: "secim-uyari" },
-            el("span", {}, `${s.bekleyenSorguAdi}: nokta seçin`),
+            el("span", {}, `${s.bekleyenSorguAdi}: ${s.mod === "kamera_secim" ? "kamera" : "nokta"} seçin`),
             el("button", { type: "button", onclick: s.onSecimIptal }, "iptal"),
           )
         : el("div", { sinif: "arac-sira" },

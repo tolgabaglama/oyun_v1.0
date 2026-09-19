@@ -1,12 +1,12 @@
 // Harita yöneticisi. MapLibre haritası bir kez kurulur ve sekmeler arasında korunur;
 // yeniden çizimde yalnızca kapsayıcı DOM'a geri takılır.
 
-import { Map as HaritaMotoru, AttributionControl, NavigationControl, setWorkerUrl, type MapMouseEvent } from "maplibre-gl";
+import { Map as HaritaMotoru, AttributionControl, NavigationControl, Popup, setWorkerUrl, type MapMouseEvent } from "maplibre-gl";
 // MapLibre arka plan çalışanını kendi hesapladığı göreli adresten arar ve derlemede bu dosya
 // paket dışında kalır. "?worker&url" Vite'a çalışanı bağımlılıklarıyla birlikte derletir,
 // dönen adres de doğru base ile üretilir.
 import calisanAdresi from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
-import type { Konum, NoktaGorunumu, SonucGorunumu } from "../app/gorunum.ts";
+import type { KameraGorunumu, Konum, NoktaGorunumu, SonucGorunumu } from "../app/gorunum.ts";
 
 setWorkerUrl(calisanAdresi);
 
@@ -15,10 +15,10 @@ const ISTANBUL: [number, number] = [28.97, 41.04];
 const UZUN_BASMA_MS = 550;
 const DOGRU_YARICAP_M = 150;
 
-export type HaritaModu = "gez" | "nokta_secim" | "raptiye" | "dislama";
+export type HaritaModu = "gez" | "nokta_secim" | "kamera_secim" | "raptiye" | "dislama";
 
 export interface HaritaOlaylari {
-  onNoktaSecildi: (poiId: string) => void;
+  onNoktaSecildi: (tip: "poi" | "kamera", id: string) => void;
   onRaptiye: (konum: Konum) => void;
   onDislama: (merkez: Konum, yaricapM: number) => void;
   onTahmin: (konum: Konum) => void;
@@ -59,6 +59,8 @@ export class HaritaYoneticisi {
   private olaylar: HaritaOlaylari;
   private basmaZamani: number | null = null;
   private noktalarEklendi = false;
+  private kameralarEklendi = false;
+  private balon: Popup | null = null;
 
   constructor(olaylar: HaritaOlaylari) {
     this.olaylar = olaylar;
@@ -118,16 +120,15 @@ export class HaritaYoneticisi {
 
   private tiklama(e: MapMouseEvent): void {
     const konum: Konum = [e.lngLat.lng, e.lngLat.lat];
-    if (this.mod === "nokta_secim") {
-      // Dokunma hedefi küçük olduğu için tıklama noktasının çevresinde arama yapılır.
-      const t = 14;
-      const kutu: [{ x: number; y: number }, { x: number; y: number }] = [
-        { x: e.point.x - t, y: e.point.y - t },
-        { x: e.point.x + t, y: e.point.y + t },
-      ];
-      const ozellikler = this.harita!.queryRenderedFeatures(kutu as never, { layers: ["tum-noktalar"] });
-      const poiId = ozellikler[0]?.properties?.poi_id as string | undefined;
-      if (poiId) this.olaylar.onNoktaSecildi(poiId);
+    if (this.mod === "nokta_secim" || this.mod === "kamera_secim") {
+      const kamera = this.mod === "kamera_secim";
+      const ozellikler = this.yakindakiler(e, [kamera ? "tum-kameralar" : "tum-noktalar"]);
+      const id = ozellikler[0]?.properties?.[kamera ? "kamera_kodu" : "poi_id"] as string | undefined;
+      if (id) this.olaylar.onNoktaSecildi(kamera ? "kamera" : "poi", id);
+      return;
+    }
+    if (this.mod === "gez") {
+      this.balonGoster(e);
       return;
     }
     if (this.mod === "raptiye") {
@@ -152,9 +153,49 @@ export class HaritaYoneticisi {
     this.mod = mod;
     if (mod !== "dislama") this.dislamaMerkezi = null;
     this.kap.dataset.mod = mod;
-    this.noktalariGoster(mod === "nokta_secim" ? true : undefined);
+    this.balon?.remove();
+    if (mod === "nokta_secim") this.noktalariGoster(true);
+    if (mod === "kamera_secim") this.kameralariGoster(true);
     this.isYap(() => this.noktaBoyutuAyarla());
     this.olaylar.onModDegisti(mod);
+  }
+
+  /** Dokunma hedefi küçük olduğu için tıklama noktasının çevresinde arama yapılır. */
+  private yakindakiler(e: MapMouseEvent, katmanlar: string[]) {
+    const t = 14;
+    const kutu: [{ x: number; y: number }, { x: number; y: number }] = [
+      { x: e.point.x - t, y: e.point.y - t },
+      { x: e.point.x + t, y: e.point.y + t },
+    ];
+    const mevcut = katmanlar.filter((k) => this.harita!.getLayer(k));
+    if (!mevcut.length) return [];
+    return this.harita!.queryRenderedFeatures(kutu as never, { layers: mevcut });
+  }
+
+  /** Gez modunda noktaya dokununca künye balonu açılır. */
+  private balonGoster(e: MapMouseEvent): void {
+    const ozellikler = this.yakindakiler(e, ["tum-kameralar", "tum-noktalar"]);
+    const f = ozellikler[0];
+    this.balon?.remove();
+    if (!f) return;
+    const p = f.properties as Record<string, string>;
+    const satirlar: string[] = [];
+    let baslik: string;
+    if (p.kamera_kodu) {
+      baslik = p.kamera_kodu;
+      satirlar.push(p.tur_adi, p.yol_adi || "Yol adı yok", p.ilce, `Bakış yönü ${p.yon}°`);
+    } else {
+      // Adı olmayan noktalarda kategori başlığa çıkar, satırda tekrar edilmez.
+      const adVar = Boolean(p.ad && p.ad !== "null");
+      baslik = adVar ? p.ad : p.kategori;
+      if (adVar) satirlar.push(p.kategori);
+      satirlar.push(p.mahalle && p.mahalle !== "null" ? `${p.ilce} / ${p.mahalle}` : p.ilce, p.kamera_durumu);
+    }
+    const govde = satirlar.filter(Boolean).map((x) => `<div class="balon-satir">${x}</div>`).join("");
+    this.balon = new Popup({ closeButton: true, maxWidth: "230px", className: "nokta-balonu" })
+      .setLngLat(e.lngLat)
+      .setHTML(`<div class="balon-baslik">${baslik}</div>${govde}`)
+      .addTo(this.harita!);
   }
 
   dislamaMerkeziVar(): boolean {
@@ -173,7 +214,10 @@ export class HaritaYoneticisi {
           features: noktalar.map((n) => ({
             type: "Feature",
             geometry: { type: "Point", coordinates: n.konum },
-            properties: { poi_id: n.id, kategori: n.kategori_adi, ilce: n.ilce },
+            properties: {
+              poi_id: n.id, kategori: n.kategori_adi, ilce: n.ilce,
+              mahalle: n.mahalle, kamera_durumu: n.kamera_durumu,
+            },
           })),
         } as never,
       });
@@ -197,13 +241,64 @@ export class HaritaYoneticisi {
   /** Seçim modunda noktalar dokunulabilir büyüklüğe çıkar. */
   private noktaBoyutuAyarla(): void {
     const harita = this.harita;
-    if (!harita?.getLayer("tum-noktalar")) return;
-    const secim = this.mod === "nokta_secim";
-    harita.setPaintProperty("tum-noktalar", "circle-radius",
-      secim
-        ? ["interpolate", ["linear"], ["zoom"], 9, 5, 14, 9]
-        : ["interpolate", ["linear"], ["zoom"], 9, 2, 14, 5]);
-    harita.setPaintProperty("tum-noktalar", "circle-color", secim ? "#e65100" : "#9e9e9e");
+    if (!harita) return;
+    // MapLibre ifade tipleri katı olduğu için yarıçap ifadeleri açıkça işaretlenir.
+    const buyuk = ["interpolate", ["linear"], ["zoom"], 9, 5, 14, 9] as unknown as never;
+    const kucukNokta = ["interpolate", ["linear"], ["zoom"], 9, 2, 14, 5] as unknown as never;
+    const kucukKamera = ["interpolate", ["linear"], ["zoom"], 9, 3, 14, 6] as unknown as never;
+    if (harita.getLayer("tum-noktalar")) {
+      const secim = this.mod === "nokta_secim";
+      harita.setPaintProperty("tum-noktalar", "circle-radius", secim ? buyuk : kucukNokta);
+      harita.setPaintProperty("tum-noktalar", "circle-color", secim ? "#e65100" : "#9e9e9e");
+    }
+    if (harita.getLayer("tum-kameralar")) {
+      const secim = this.mod === "kamera_secim";
+      harita.setPaintProperty("tum-kameralar", "circle-radius", secim ? buyuk : kucukKamera);
+      harita.setPaintProperty("tum-kameralar", "circle-color", secim ? "#e65100" : "#b71c1c");
+    }
+  }
+
+  /** Tüm ŞEHİRGÖZ kameraları; kamera sorgusunda seçilebilir. */
+  kameralariEkle(kameralar: KameraGorunumu[]): void {
+    this.isYap(() => {
+      if (this.kameralarEklendi) return;
+      const harita = this.harita!;
+      harita.addSource("tum-kameralar", {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: kameralar.map((k) => ({
+            type: "Feature",
+            geometry: { type: "Point", coordinates: k.konum },
+            properties: { kamera_kodu: k.kod, tur_adi: k.tur_adi, ilce: k.ilce, yol_adi: k.yol_adi, yon: k.yon },
+          })),
+        } as never,
+      });
+      harita.addLayer({
+        id: "tum-kameralar",
+        type: "circle",
+        source: "tum-kameralar",
+        layout: { visibility: "none" },
+        paint: {
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 3, 14, 6],
+          "circle-color": "#b71c1c",
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 1,
+        },
+      });
+      this.kameralarEklendi = true;
+    });
+  }
+
+  kameralariGoster(gorunur?: boolean): void {
+    if (gorunur === undefined) return;
+    this.isYap(() => {
+      if (this.harita?.getLayer("tum-kameralar")) this.harita.setLayoutProperty("tum-kameralar", "visibility", gorunur ? "visible" : "none");
+    });
+  }
+
+  kameralarGorunur(): boolean {
+    return this.harita?.getLayer("tum-kameralar") ? this.harita.getLayoutProperty("tum-kameralar", "visibility") === "visible" : false;
   }
 
   noktalariGoster(gorunur?: boolean): void {

@@ -23,6 +23,9 @@ export interface DosyaGorunumu {
   ihbar_notu: string;
   seed: number;
   zorluk_adi: string;
+  /** "14. gün, saat 18:23" biçiminde şu anki zaman. */
+  su_an_metni: string;
+  su_an_gun: number;
 }
 
 /** Sorgu sekmesindeki bir sensör satırı. */
@@ -41,8 +44,10 @@ export interface SensorGorunumu {
   es_varyant: { id: string; ad: string; maliyet: number } | null;
   /** Sorgudan önce doldurulması gereken alanlar. */
   parametreler: ParametreGorunumu[];
-  /** Daha önce aynı parametrelerle sorulduysa ücret alınmaz. */
+  /** Parametresiz sensör daha önce sorulduysa tekrarı ücretsizdir. */
   sorulmus: boolean;
+  /** Parametreli sensörde kaç farklı sorgu yapıldığı; her yeni parametre tam ücrete tabidir. */
+  yapilan_sorgu_sayisi: number;
   /** Zorluk yüzünden kapalıysa sebebi. */
   kapali_sebep: string | null;
 }
@@ -61,6 +66,8 @@ export interface ParametreGorunumu {
   zorunlu: boolean;
   /** Seçim listesi olan parametrelerde seçenekler. */
   secenekler?: { deger: string; etiket: string }[];
+  /** Listede önceden seçili gelecek değer. */
+  varsayilan?: string;
 }
 
 export interface KayitGorunumu {
@@ -68,6 +75,10 @@ export interface KayitGorunumu {
   metin: string;
   gun: number;
   saat: string;
+  /** Şu ana göre okunur zaman: "bugün 14:20", "dün 09:15". Sabit kayıtlarda null. */
+  gorece_zaman: string | null;
+  /** Kaydın işaret ettiği yer: "Kadıköy / Caferağa Mahallesi" gibi. Yoksa null. */
+  konum_metni: string | null;
   sensor_id: string;
 }
 
@@ -149,7 +160,27 @@ export interface NoktaGorunumu {
   ilce: string;
   mahalle: string | null;
   konum: Konum;
+  /** Özel kamera talebinin bu kategoride sonuç verme ihtimali. */
+  kamera_durumu: string;
 }
+
+/** ŞEHİRGÖZ kamerası, haritadan seçim ve bilgi balonu için. */
+export interface KameraGorunumu {
+  kod: string;
+  tur: string;
+  tur_adi: string;
+  ilce: string;
+  yol_adi: string | null;
+  yon: number;
+  konum: Konum;
+}
+
+export const KAMERA_TUR_ADLARI: Record<string, string> = {
+  kavsak: "Kavşak kamerası",
+  durak: "Durak kamerası",
+  okul: "Okul girişi kamerası",
+  meydan: "Meydan kamerası",
+};
 
 export const ZORLUK_ADLARI: Record<Zorluk, string> = {
   kolay: "Kolay",

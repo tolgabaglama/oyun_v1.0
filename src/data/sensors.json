@@ -119,7 +119,12 @@
       "gurultu": [],
       "sert_kisit": null,
       "parametreler": [],
-      "kart_metni": "Araç: {arac_var}. Plaka {plaka}, tescil ilçesi {ilce}."
+      "kart_metni": "Araç kaydı var. Plaka {plaka}, tescil ilçesi {ilce}.",
+      "bos_kosulu": {
+        "alan": "arac_var",
+        "deger": "hayır"
+      },
+      "bos_metni": "Adına kayıtlı araç yok."
     },
     {
       "id": "abonelik",
@@ -900,5 +905,6 @@
       "kart_metni": "{poi_id}, {gun}. gün {saat}: eşleşme {eslesme}, yön {yon}."
     }
   ],
-  "kapsama_aciklamasi": "Bazı sensörler yalnızca belirli POI kategorilerinde kayıt bırakır. kapsama alanı: hangi POI alanına bakılacağı, kategori başına oran ve varsayılan. Oran POI başına bir kez ve deterministik olarak çözülür; aynı POI dava boyunca ya kapsamdadır ya değildir."
+  "kapsama_aciklamasi": "Bazı sensörler yalnızca belirli POI kategorilerinde kayıt bırakır. kapsama alanı: hangi POI alanına bakılacağı, kategori başına oran ve varsayılan. Oran POI başına bir kez ve deterministik olarak çözülür; aynı POI dava boyunca ya kapsamdadır ya değildir.",
+  "bos_sonuc_aciklamasi": "bos_kosulu sağlanan kayıt anlamlı bilgi taşımaz: yalnızca bos_metni gösterilir, diğer alanlar ve harita katmanı düşer."
 }

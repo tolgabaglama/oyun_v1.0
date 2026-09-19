@@ -330,3 +330,53 @@ input[type="number"], input[type="text"], select, textarea {
   flex: 0 0 auto; width: 100%; border: 0; border-radius: 0;
   background: #7a2f2f; color: #fff; font-size: 11px; font-weight: bold; letter-spacing: 0.5px; padding: 7px;
 }
+
+/* ---- Test turlarından gelen düzeltmeler ---- */
+
+/* Zaman referansı şeridi */
+.su-an-serit {
+  display: flex; align-items: center; gap: 8px;
+  background: #2f4f7a; color: #fff; padding: 6px 12px; font-size: 13px;
+}
+.su-an-etiket { font-size: 9px; letter-spacing: 1px; opacity: 0.85; }
+
+.seed-satiri, .seed-serit { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.seed-satiri { padding: 4px 0 8px; border-bottom: 1px dotted #cfcfcf; margin-bottom: 4px; }
+.seed-serit { background: #e6e6e6; border-bottom: 1px solid #c4c4c4; padding: 6px 12px; }
+.seed-satiri span, .seed-serit span { flex: 1; }
+.kopyala-dugme { font-size: 10px; padding: 2px 8px; }
+
+/* Ana ekranda dava numarası katlanır alanı */
+.seed-katlanir { margin-top: 12px; border-top: 1px solid #d4d4d4; padding-top: 8px; }
+.seed-katlanir summary { font-size: 11px; color: #2f4f7a; cursor: pointer; }
+.seed-katlanir input { margin-top: 6px; }
+.seed-katlanir button { margin-top: 8px; }
+
+/* Sorgu penceresinde seçilen nokta */
+.secim-kutu { display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #8a8a8a; padding: 6px 8px; }
+.secim-metni { flex: 1; font-size: 12px; font-weight: bold; }
+.secim-degistir { font-size: 10px; padding: 2px 6px; }
+.eksik-uyari { margin: 6px 0 0; font-size: 11px; color: #a03030; font-weight: bold; }
+
+/* Kayıt satırlarında konum ve göreli zaman */
+.kayit-konum { display: block; font-size: 10px; color: #2f4f7a; }
+.kayit-gorece { display: block; font-size: 10px; color: #666; }
+.kayit-kaynak {
+  display: inline-block; font-size: 9px; font-weight: bold; color: #fff; background: #2f4f7a;
+  padding: 1px 4px; border-radius: 2px; margin-right: 5px;
+}
+.kayit-tablo.kronolojik .kayit-zaman { width: 92px; }
+
+/* Pano sıralama çubuğu */
+.siralama-cubugu { display: flex; align-items: center; gap: 6px; padding: 6px 10px 0; }
+.siralama-etiket { font-size: 9px; letter-spacing: 1px; color: #666; }
+.siralama-dugme { font-size: 10px; padding: 3px 8px; }
+.siralama-dugme.aktif { background: linear-gradient(#3a5f8f, #2f4f7a); color: #fff; border-color: #1f3552; font-weight: bold; }
+
+/* Harita nokta künyesi balonu */
+.nokta-balonu .maplibregl-popup-content {
+  padding: 8px 10px; border: 1px solid #6f6f6f; border-radius: 2px;
+  font-family: Tahoma, Verdana, Arial, sans-serif; font-size: 11px;
+}
+.balon-baslik { font-size: 12px; font-weight: bold; color: #2f4f7a; margin-bottom: 4px; }
+.balon-satir { color: #333; line-height: 1.5; }

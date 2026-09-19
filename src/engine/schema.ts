@@ -45,6 +45,12 @@ export interface GurultuKurali {
   gun_en_cok?: number;
 }
 
+/** Kaydın anlamlı bilgi taşımadığı durum: bu alan bu değerdeyse yalnızca kısa metin gösterilir. */
+export interface BosKosulu {
+  alan: string;
+  deger: string | number | boolean;
+}
+
 /** Sensörün yalnızca belirli POI kategorilerinde kayıt bırakması. Oran POI başına bir kez çözülür. */
 export interface Kapsama {
   alan: "kategori";
@@ -92,6 +98,8 @@ export interface SensorTanimi {
   belirsizlik_m?: number;
   alanlar: string[];
   gurultu: GurultuKurali[];
+  bos_kosulu?: BosKosulu;
+  bos_metni?: string;
   sert_kisit: SertKisit | null;
   parametreler: SensorParametre[];
   kart_metni: string;

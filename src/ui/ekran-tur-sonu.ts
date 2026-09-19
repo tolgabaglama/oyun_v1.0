@@ -7,6 +7,8 @@ import type { TurSonuGorunumu } from "../app/gorunum.ts";
 export interface TurSonuSecenekleri {
   ozet: TurSonuGorunumu;
   hedefAdi: string;
+  seed: number;
+  onSeedKopyala: () => void;
   onHaritayiIncele: () => void;
   onYeniDava: () => void;
   onAnaEkran: () => void;
@@ -25,6 +27,11 @@ export function ekranTurSonu(s: TurSonuSecenekleri): HTMLElement {
       el("div", { sinif: "sonuc-etiket" }, basarili ? "DOSYA KAPANDI" : "DOSYA DÜŞTÜ"),
       el("h1", {}, basarili ? "HEDEF BULUNDU" : "HEDEF BULUNAMADI"),
       el("div", { sinif: "sonuc-alt" }, `${s.hedefAdi} · ${o.gercek_yer_metni}`),
+    ),
+
+    el("div", { sinif: "seed-serit" },
+      el("span", {}, "Dava numarası: ", el("strong", {}, String(s.seed))),
+      el("button", { type: "button", sinif: "kopyala-dugme", onclick: s.onSeedKopyala }, "kopyala"),
     ),
 
     el("div", { sinif: "sonuc-govde" },

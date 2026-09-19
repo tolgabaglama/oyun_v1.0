@@ -6,6 +6,7 @@ import { TAVAN_PUAN } from "../app/oturum.ts";
 
 export interface DosyaSekmesiSecenekleri {
   dosya: DosyaGorunumu;
+  onSeedKopyala: () => void;
   gecmis: SonucGorunumu[];
   serit: UstSerit;
   /** Sorgu satırına basınca o sorgunun kayıtlarına gitmek için. */
@@ -26,8 +27,16 @@ export function sekmeDosya(s: DosyaSekmesiSecenekleri): HTMLElement {
   const toplamMaliyet = sirali.reduce((t, g) => t + g.maliyet, 0);
 
   return el("div", { sinif: "sekme-icerik dosya-sekmesi" },
+    el("div", { sinif: "su-an-serit" },
+      el("span", { sinif: "su-an-etiket" }, "ŞU AN"),
+      el("strong", {}, dosya.su_an_metni),
+    ),
     el("section", { sinif: "bolum" },
       el("h2", {}, `DAVA ${String(dosya.seed).padStart(4, "0")} / ${dosya.zorluk_adi.toUpperCase()}`),
+      el("div", { sinif: "seed-satiri" },
+        el("span", {}, "Dava numarası: ", el("strong", {}, String(dosya.seed))),
+        el("button", { type: "button", sinif: "kopyala-dugme", onclick: s.onSeedKopyala }, "kopyala"),
+      ),
       alanSatiri("Ad soyad", dosya.ad),
       alanSatiri("Yaş", String(dosya.yas)),
       el("div", { sinif: "ihbar-kutu" },

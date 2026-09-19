@@ -7,8 +7,9 @@ import { anaEkran } from "./ekran-ana.ts";
 import { ekranTurSonu } from "./ekran-tur-sonu.ts";
 import { sekmeCubugu, ustSeritCiz, type SekmeKimligi } from "./kabuk.ts";
 import { sekmeDosya } from "./sekme-dosya.ts";
-import { sekmeSorgu, sonucPenceresi } from "./sekme-sorgu.ts";
-import { sekmePano } from "./sekme-pano.ts";
+import { sekmeSorgu } from "./sekme-sorgu.ts";
+import { sorguPenceresi, sonucPenceresi } from "./pencere-sorgu.ts";
+import { sekmePano, type PanoSiralamasi } from "./sekme-pano.ts";
 import { sekmeHarita } from "./sekme-harita.ts";
 import { HaritaYoneticisi, type HaritaModu } from "./harita.ts";
 import { veriYukleWeb, katalogYukleWeb } from "../engine/data-web.ts";
@@ -31,10 +32,43 @@ interface Uygulama {
 const kok = document.getElementById("uygulama")!;
 let uyg: Uygulama;
 
+// ---- Geçici ekran durumları ---------------------------------------------------------------
+
+/** Vurgulanacak sorgu; DOSYA sekmesinden PANO veya haritaya geçerken kullanılır. */
+let vurguluSorgu: string | null = null;
+/** Sorgu sonrası gösterilecek sonuç penceresi. */
+let acikSonuc: SonucGorunumu | null = null;
+/** Açık sorgu penceresi ve içine doldurulmuş parametreler. Haritadan dönünce korunur. */
+let hazirlananSorgu: { sensorId: string; degerler: Record<string, string | number> } | null = null;
+/** Haritadan seçim bekleyen parametre. */
+let secimBekleyen: { parametreAdi: string; tip: "poi" | "kamera" } | null = null;
+let tahminOnayi: Konum | null = null;
+let acikTahmin: TahminGorunumu | null = null;
+let bekleyenRaptiye: Konum | null = null;
+let panoSiralamasi: PanoSiralamasi = "sensore_gore";
+let harita: HaritaYoneticisi | null = null;
+let haritaModu: HaritaModu = "gez";
+
 function kaydet(): void {
   if (uyg.oturum) {
     uyg.oturum.aktifSekme = uyg.sekme;
     turYaz(uyg.oturum.kaydet());
+  }
+}
+
+function hataGoster(mesaj: string): void {
+  const kutu = el("div", { sinif: "hata-kutu" }, mesaj);
+  kok.prepend(kutu);
+  setTimeout(() => kutu.remove(), 4000);
+}
+
+/** Dava numarasını panoya kopyalar; izin yoksa sessizce geçer. */
+function seedKopyala(seed: number): void {
+  const bildir = () => hataGoster(`Dava numarası kopyalandı: ${seed}`);
+  try {
+    void navigator.clipboard?.writeText(String(seed)).then(bildir, () => hataGoster(`Dava numarası: ${seed}`));
+  } catch {
+    hataGoster(`Dava numarası: ${seed}`);
   }
 }
 
@@ -53,53 +87,26 @@ function turBaslat(seed: number, zorluk: Zorluk): void {
   }
   uyg.sekme = "dosya";
   uyg.ekran = "tur";
+  hazirlananSorgu = null;
+  secimBekleyen = null;
   ayarYaz({ son_zorluk: zorluk, son_seed: seed });
   kaydet();
   ciz();
 }
 
-function hataGoster(mesaj: string): void {
-  const kutu = el("div", { sinif: "hata-kutu" }, mesaj);
-  kok.prepend(kutu);
-  setTimeout(() => kutu.remove(), 4000);
-}
-
-/** Vurgulanacak sorgu; DOSYA sekmesinden PANO'ya geçerken kullanılır. */
-let vurguluSorgu: string | null = null;
-/** Sorgu sonrası gösterilecek sonuç penceresi. */
-let acikSonuc: SonucGorunumu | null = null;
-/** Haritadan nokta bekleyen sorgu. Harita sekmesi seçim yapınca tamamlanır. */
-export let bekleyenSorgu: { sensorId: string; parametreler: Record<string, string | number> } | null = null;
-
-export function bekleyenSorguyuTamamla(poiId: string): void {
-  if (!bekleyenSorgu || !uyg.oturum) return;
-  const { sensorId, parametreler } = bekleyenSorgu;
-  bekleyenSorgu = null;
-  try {
-    acikSonuc = uyg.oturum.sorgula(sensorId, { ...parametreler, poi_id: poiId });
-  } catch (e) {
-    hataGoster((e as Error).message);
-  }
-  kaydet();
-  ciz();
-}
-
-export function bekleyenSorguyuIptal(): void {
-  bekleyenSorgu = null;
-  harita?.modAyarla("gez");
-  ciz();
-}
-
-/** Tek harita örneği; sekmeler arasında korunur. */
-let harita: HaritaYoneticisi | null = null;
-let haritaModu: HaritaModu = "gez";
-let acikTahmin: TahminGorunumu | null = null;
-let bekleyenRaptiye: Konum | null = null;
+// ---- Harita ---------------------------------------------------------------------------------
 
 function haritaKur(): HaritaYoneticisi {
   if (harita) return harita;
   harita = new HaritaYoneticisi({
-    onNoktaSecildi: (poiId) => bekleyenSorguyuTamamla(poiId),
+    onNoktaSecildi: (tip, id) => {
+      if (!secimBekleyen || !hazirlananSorgu) return;
+      hazirlananSorgu.degerler[secimBekleyen.parametreAdi] = id;
+      secimBekleyen = null;
+      harita?.modAyarla("gez");
+      uyg.sekme = "sorgu";
+      ciz();
+    },
     onRaptiye: (konum) => { bekleyenRaptiye = konum; haritaModu = "gez"; ciz(); },
     onDislama: (merkez, yaricap) => {
       uyg.oturum!.dislamalar = [...uyg.oturum!.dislamalar, { id: `D${Date.now().toString(36)}`, merkez, yaricap_m: yaricap }];
@@ -113,8 +120,68 @@ function haritaKur(): HaritaYoneticisi {
   return harita;
 }
 
-/** Onay bekleyen tahmin konumu. */
-let tahminOnayi: Konum | null = null;
+function haritaSekmesi(): HTMLElement {
+  const o = uyg.oturum!;
+  const h = haritaKur();
+  h.noktalariEkle(o.noktalar());
+  h.kameralariEkle(o.kameralar());
+  h.katmanlariGuncelle(o.gecmis(), o.gizliKatmanlar);
+  h.cizimleriGuncelle({
+    raptiyeler: o.raptiyeler,
+    dislamalar: o.dislamalar,
+    tahminler: o.tahminler(),
+    gercekKonum: o.bitti() ? o.turSonu().gercek_konum : null,
+  });
+
+  const istenenMod: HaritaModu = secimBekleyen ? (secimBekleyen.tip === "kamera" ? "kamera_secim" : "nokta_secim") : haritaModu;
+  if (secimBekleyen && haritaModu !== istenenMod) h.modAyarla(istenenMod);
+  if (!secimBekleyen && (haritaModu === "nokta_secim" || haritaModu === "kamera_secim")) h.modAyarla("gez");
+
+  const bekleyenAd = secimBekleyen && hazirlananSorgu
+    ? o.sensorler().find((x) => x.id === hazirlananSorgu!.sensorId)?.ad ?? "Sorgu"
+    : null;
+
+  const icerik = sekmeHarita({
+    harita: h,
+    gecmis: o.gecmis(),
+    gizli: o.gizliKatmanlar,
+    raptiyeler: o.raptiyeler,
+    dislamalar: o.dislamalar,
+    mod: haritaModu,
+    noktalarGorunur: h.noktalarGorunur(),
+    kameralarGorunur: h.kameralarGorunur(),
+    bekleyenSorguAdi: bekleyenAd,
+    turBitti: o.bitti(),
+    onKatmanDegis: (sorguId, gorunur) => {
+      if (gorunur) o.gizliKatmanlar.delete(sorguId);
+      else o.gizliKatmanlar.add(sorguId);
+      h.katmanlariGuncelle(o.gecmis(), o.gizliKatmanlar);
+      kaydet();
+    },
+    onNoktalarDegis: (gorunur) => h.noktalariGoster(gorunur),
+    onKameralarDegis: (gorunur) => h.kameralariGoster(gorunur),
+    onModDegis: (mod) => { h.modAyarla(mod); ciz(); },
+    onKatmanaGit: (sorguId) => {
+      const s = o.gecmis().find((x) => x.sorgu_id === sorguId);
+      if (s) h.katmanaGit(s);
+    },
+    onRaptiyeSil: (id) => { o.raptiyeler = o.raptiyeler.filter((r) => r.id !== id); kaydet(); ciz(); },
+    onDislamaSil: (id) => { o.dislamalar = o.dislamalar.filter((d) => d.id !== id); kaydet(); ciz(); },
+    onSecimIptal: () => { secimBekleyen = null; h.modAyarla("gez"); uyg.sekme = "sorgu"; ciz(); },
+  });
+
+  setTimeout(() => {
+    h.baslat();
+    if (vurguluSorgu) {
+      const s = o.gecmis().find((x) => x.sorgu_id === vurguluSorgu);
+      vurguluSorgu = null;
+      if (s) h.katmanaGit(s);
+    }
+  }, 0);
+  return icerik;
+}
+
+// ---- Sekmeler --------------------------------------------------------------------------------
 
 function sekmeIcerigi(sekme: SekmeKimligi): HTMLElement {
   const o = uyg.oturum!;
@@ -123,6 +190,7 @@ function sekmeIcerigi(sekme: SekmeKimligi): HTMLElement {
       dosya: o.dosya(),
       gecmis: o.gecmis(),
       serit: o.ustSerit(),
+      onSeedKopyala: () => seedKopyala(o.dosya().seed),
       onSorguSec: (sorguId) => {
         vurguluSorgu = sorguId;
         uyg.sekme = "pano";
@@ -135,96 +203,60 @@ function sekmeIcerigi(sekme: SekmeKimligi): HTMLElement {
     return sekmeSorgu({
       sensorler: o.sensorler(),
       turBitti: o.bitti(),
-      onSorgula: (sensorId, parametreler) => {
-        const sonuc = o.sorgula(sensorId, parametreler);
-        acikSonuc = sonuc;
-        kaydet();
-        // Pencere kapandıktan sonra sonuç penceresiyle yeniden çizilir.
-        setTimeout(ciz, 0);
-        return sonuc;
-      },
-      onNoktaSec: (sensorId, mevcut) => {
-        bekleyenSorgu = { sensorId, parametreler: mevcut };
-        uyg.sekme = "harita";
-        kaydet();
+      onSensorSec: (sensorId) => {
+        hazirlananSorgu = { sensorId, degerler: {} };
         ciz();
       },
     });
   }
-  if (sekme === "harita") {
-    const h = haritaKur();
-    h.noktalariEkle(o.noktalar());
-    h.katmanlariGuncelle(o.gecmis(), o.gizliKatmanlar);
-    h.cizimleriGuncelle({
-      raptiyeler: o.raptiyeler,
-      dislamalar: o.dislamalar,
-      tahminler: o.tahminler(),
-      gercekKonum: o.bitti() ? o.turSonu().gercek_konum : null,
-    });
-    if (bekleyenSorgu && haritaModu !== "nokta_secim") h.modAyarla("nokta_secim");
-    if (!bekleyenSorgu && haritaModu === "nokta_secim") h.modAyarla("gez");
-    const bekleyenAd = bekleyenSorgu ? o.sensorler().find((x) => x.id === bekleyenSorgu!.sensorId)?.ad ?? "Sorgu" : null;
-    const icerik = sekmeHarita({
-      harita: h,
-      gecmis: o.gecmis(),
-      gizli: o.gizliKatmanlar,
-      raptiyeler: o.raptiyeler,
-      dislamalar: o.dislamalar,
-      mod: haritaModu,
-      noktalarGorunur: h.noktalarGorunur(),
-      bekleyenSorguAdi: bekleyenAd,
-      turBitti: o.bitti(),
-      onKatmanDegis: (sorguId, gorunur) => {
-        if (gorunur) o.gizliKatmanlar.delete(sorguId);
-        else o.gizliKatmanlar.add(sorguId);
-        h.katmanlariGuncelle(o.gecmis(), o.gizliKatmanlar);
-        kaydet();
-      },
-      onNoktalarDegis: (gorunur) => h.noktalariGoster(gorunur),
-      onModDegis: (mod) => { h.modAyarla(mod); ciz(); },
-      onKatmanaGit: (sorguId) => {
-        const s = o.gecmis().find((x) => x.sorgu_id === sorguId);
-        if (s) h.katmanaGit(s);
-      },
-      onRaptiyeSil: (id) => { o.raptiyeler = o.raptiyeler.filter((r) => r.id !== id); kaydet(); ciz(); },
-      onDislamaSil: (id) => { o.dislamalar = o.dislamalar.filter((d) => d.id !== id); kaydet(); ciz(); },
-      onSecimIptal: bekleyenSorguyuIptal,
-    });
-    // Harita kapsayıcısı DOM'a takıldıktan sonra kurulur veya boyutlanır.
-    setTimeout(() => {
-      h.baslat();
-      if (vurguluSorgu) {
-        const s = o.gecmis().find((x) => x.sorgu_id === vurguluSorgu);
-        vurguluSorgu = null;
-        if (s) h.katmanaGit(s);
-      }
-    }, 0);
-    return icerik;
-  }
-  if (sekme === "pano") {
-    const vurgulu = vurguluSorgu;
-    vurguluSorgu = null;
-    return sekmePano({
-      gecmis: o.gecmis(),
-      notlar: o.notlar,
-      vurgulu,
-      onNotDegisti: (metin) => {
-        // Yeniden çizim yapılmaz, yoksa yazarken imleç kaybolur.
-        o.notlar = metin;
-        kaydet();
-      },
-      onHaritayaGit: (sorguId) => {
-        vurguluSorgu = sorguId;
-        uyg.sekme = "harita";
-        kaydet();
-        ciz();
-      },
-    });
-  }
-  return el("div", { sinif: "sekme-icerik yer-tutucu" }, el("p", {}, "Bilinmeyen sekme."));
+  if (sekme === "harita") return haritaSekmesi();
+  return sekmePano({
+    gecmis: o.gecmis(),
+    notlar: o.notlar,
+    siralama: panoSiralamasi,
+    vurgulu: (() => { const v = vurguluSorgu; vurguluSorgu = null; return v; })(),
+    onSiralamaDegis: (s) => { panoSiralamasi = s; ciz(); },
+    onNotDegisti: (metin) => { o.notlar = metin; kaydet(); },
+    onHaritayaGit: (sorguId) => {
+      vurguluSorgu = sorguId;
+      uyg.sekme = "harita";
+      kaydet();
+      ciz();
+    },
+  });
 }
 
-/** Tahmin onayı penceresi: uzun basmadan sonra çıkar. */
+// ---- Pencereler -------------------------------------------------------------------------------
+
+function acikSorguPenceresi(): HTMLElement | null {
+  if (!hazirlananSorgu || secimBekleyen) return null;
+  const o = uyg.oturum!;
+  const sensor = o.sensorler().find((x) => x.id === hazirlananSorgu!.sensorId);
+  if (!sensor) return null;
+  return sorguPenceresi({
+    sensor,
+    degerler: hazirlananSorgu.degerler,
+    secimAdi: (ad, deger) => o.secimAdi(sensor.parametreler.find((p) => p.ad === ad)?.tip === "kamera" ? "kamera" : "poi", deger),
+    ucretsizMi: (degerler) => o.ucretsizMi(sensor.id, degerler),
+    onHaritadanSec: (parametreAdi, tip) => {
+      secimBekleyen = { parametreAdi, tip };
+      uyg.sekme = "harita";
+      ciz();
+    },
+    onSorgula: (degerler) => {
+      try {
+        acikSonuc = o.sorgula(sensor.id, degerler);
+        hazirlananSorgu = null;
+        kaydet();
+      } catch (e) {
+        hataGoster((e as Error).message);
+      }
+      ciz();
+    },
+    onKapat: () => { hazirlananSorgu = null; ciz(); },
+  });
+}
+
 function tahminPenceresi(konum: Konum): HTMLElement {
   const kapat = () => { tahminOnayi = null; ciz(); };
   return el("div", { sinif: "pencere-perde", onclick: (e: Event) => { if (e.target === e.currentTarget) kapat(); } },
@@ -250,16 +282,14 @@ function tahminPenceresi(konum: Konum): HTMLElement {
   );
 }
 
-/** Tahmin sonucu penceresi. */
 function tahminSonucPenceresi(t: TahminGorunumu): HTMLElement {
-  const kapat = () => { acikTahmin = null; ciz(); };
   return el("div", { sinif: "pencere-perde" },
     el("div", { sinif: "pencere" },
       el("div", { sinif: "pencere-baslik" }, t.dogru ? "DOĞRU" : "YANLIŞ"),
       el("div", { sinif: "pencere-govde" },
         el("p", { sinif: t.dogru ? "sonuc-dogru" : "sonuc-yanlis" },
           t.dogru ? `Hedef bulundu. Sapma ${t.mesafe_m} metre.` : `Hedef burada değil. En yakın olduğunuz mesafe ${t.mesafe_m} metre.`),
-        !t.dogru && el("p", {}, t.kalan_hak > 0 ? `250 puan ceza uygulandı. Bir tahmin hakkınız kaldı.` : "İkinci yanlış tahmin, tur kapandı."),
+        !t.dogru && el("p", {}, t.kalan_hak > 0 ? "250 puan ceza uygulandı. Bir tahmin hakkınız kaldı." : "İkinci yanlış tahmin, tur kapandı."),
       ),
       el("div", { sinif: "dugme-sira" },
         el("button", { type: "button", sinif: "birincil", onclick: () => {
@@ -272,7 +302,6 @@ function tahminSonucPenceresi(t: TahminGorunumu): HTMLElement {
   );
 }
 
-/** Raptiye notu penceresi. */
 function raptiyePenceresi(konum: Konum): HTMLElement {
   const kutu = el("input", { type: "text", placeholder: "Kısa not (isteğe bağlı)" });
   const kapat = () => { bekleyenRaptiye = null; ciz(); };
@@ -293,6 +322,8 @@ function raptiyePenceresi(konum: Konum): HTMLElement {
   );
 }
 
+// ---- Ekranlar ----------------------------------------------------------------------------------
+
 function turEkrani(): HTMLElement {
   const o = uyg.oturum!;
   const ekran = el("div", { sinif: "ekran tur-ekrani" },
@@ -306,6 +337,8 @@ function turEkrani(): HTMLElement {
       ciz();
     }),
   );
+  const sorgu = acikSorguPenceresi();
+  if (sorgu) ekran.append(sorgu);
   if (tahminOnayi) ekran.append(tahminPenceresi(tahminOnayi));
   if (acikTahmin) ekran.append(tahminSonucPenceresi(acikTahmin));
   if (bekleyenRaptiye) ekran.append(raptiyePenceresi(bekleyenRaptiye));
@@ -327,11 +360,12 @@ function ciz(): void {
     temizle(kok, ekranTurSonu({
       ozet: o.turSonu(),
       hedefAdi: o.dosya().ad,
+      seed: o.dosya().seed,
+      onSeedKopyala: () => seedKopyala(o.dosya().seed),
       onHaritayiIncele: () => {
         uyg.ekran = "tur";
         uyg.sekme = "harita";
         ciz();
-        // Gerçek konum haritada işaretlidir; oraya yaklaşılır.
         setTimeout(() => harita?.merkezle(o.turSonu().gercek_konum, 14), 50);
       },
       onYeniDava: () => {
@@ -357,7 +391,6 @@ function ciz(): void {
   }
   temizle(kok, anaEkran({
     sonZorluk: (ayar.son_zorluk as Zorluk) ?? "standart",
-    sonSeed: ayar.son_seed,
     devamEdenVar: Boolean(kayit),
     devamOzeti,
     onBaslat: turBaslat,

@@ -381,7 +381,12 @@ function alanDoldur(k: KayitBaglami, sensor: SensorTanimi, olay: Olay, poi: Poi 
     if (alan in ek) { out[alan] = ek[alan]; continue; }
     switch (alan) {
       case "poi_id": case "adres_poi": out[alan] = poi?.id ?? null; break;
-      case "ilce": out[alan] = poi?.ilce ?? null; break;
+      case "ilce": {
+        // Boş koşulu sağlanan kayıtlarda konum alanları doldurulmaz.
+        const bos = sensor.bos_kosulu && out[sensor.bos_kosulu.alan] === sensor.bos_kosulu.deger;
+        out[alan] = bos ? null : poi?.ilce ?? null;
+        break;
+      }
       case "mahalle": out[alan] = poi?.mahalle ?? null; break;
       case "kategori": out[alan] = poi?.kategori ?? null; break;
       case "gun": out[alan] = z.gun; break;
@@ -393,6 +398,8 @@ function alanDoldur(k: KayitBaglami, sensor: SensorTanimi, olay: Olay, poi: Poi 
       case "abone_tipi": out[alan] = "mesken"; break;
       case "arac_var": out[alan] = k.model.arac_var ? "evet" : "hayır"; break;
       case "plaka": out[alan] = k.model.plaka; break;
+      // Araç yoksa tescil ilçesi de yoktur; dolu bırakmak ev ilçesini sızdırırdı.
+      case "ilce_tescil": out[alan] = k.model.arac_var ? poi?.ilce ?? null : null; break;
       case "teslim_yeri": out[alan] = olay.rol === "is" ? "iş yeri" : "ev"; break;
       case "tutar_araligi": out[alan] = k.rng.sec(TUTARLAR); break;
       case "sure_dk": out[alan] = olay.bitis ? zamanDakika(olay.bitis) - zamanDakika(olay.zaman) : k.rng.tam(30, 240); break;
