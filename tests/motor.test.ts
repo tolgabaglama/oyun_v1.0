@@ -179,14 +179,17 @@ describe("oracle", () => {
         .filter((s) => s.sert_kisit!.tip !== "dogrulayici")
         .map((s) => kisitHesapla(d, veri, s, true)!);
       expect(kisitlar.every(Boolean)).toBe(true);
-      const adaylar = kisitlariUygula(veri, kisitlar);
+      // Çevre çıkarımı kullanıldıysa par adımı bunu parametresinde taşır.
+      const cevre = Number(d.par.yol.find((a) => a.parametreler?.cevre_m)?.parametreler?.cevre_m ?? 0);
+      const adaylar = kisitlariUygula(veri, kisitlar, cevre);
       expect(adaylar.has(d.gercek.su_anki_konum.poi_id)).toBe(true);
       const dogrulayici = sensorler.filter((s) => s.sert_kisit!.tip === "dogrulayici");
       if (!dogrulayici.length) {
+        expect(cevre).toBe(0);
         expect(tekNoktaMi(veri, adaylar)).toBe(true);
       } else {
         // Doğrulayıcı adımlar kalan adayları tek tek eler; kısıtlar sonrası aday sayısı sınırlı olmalı.
-        expect(adaylar.size).toBeLessThanOrEqual(9);
+        expect(adaylar.size).toBeLessThanOrEqual(10);
         const d2 = dogrulayiciHesapla(d, veri, dogrulayici[0])!;
         expect(d2.gercekte_eslesme).toBe(true);
         expect(d.par.yol.filter((a) => a.sensor_id === dogrulayici[0].id).length).toBe(Math.max(1, adaylar.size - 1));

@@ -119,6 +119,10 @@ console.log(`  üye olan kabul edilmiş dava: ${uye} / ${kabul.length}  (%${((uy
 const turnikeli = kabul.filter((d) => (d.ozet.sensor_basina.spor_turnike ?? 0) > 0).length;
 console.log(`  turnike kaydı bulunan dava:  ${turnikeli} / ${kabul.length}`);
 
+console.log(`\nÇEVRE ÇIKARIMI KULLANIMI`);
+const cevreli = kabul.filter((d) => d.par.yol.some((a) => a.parametreler?.cevre_m)).length;
+console.log(`  çevre çıkarımı gereken dava: ${cevreli} / ${kabul.length}  (%${((cevreli / kabul.length) * 100).toFixed(1)})`);
+
 console.log(`\nSENSÖR KULLANIMI (par yollarında)`);
 const sensorSayim = new Map<string, number>();
 for (const d of kabul) for (const a of d.par.yol) sensorSayim.set(a.sensor_id, (sensorSayim.get(a.sensor_id) ?? 0) + 1);

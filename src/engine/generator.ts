@@ -48,6 +48,9 @@ function once(a: Zaman, b: Zaman): boolean {
 const EV_KATEGORILERI = ["market", "eczane", "cami", "kahvehane"];
 const UCUNCU_KATEGORILERI = ["spor_salonu", "kahvehane", "cami", "market"];
 const RUTIN_DISI_KATEGORILERI = ["market", "kahvehane", "spor_salonu", "cami", "eczane", "doviz"];
+/** İş çevresi: öğle arasında gidilen yerler. Yakınlık yarıçapı metre. */
+const IS_CEVRESI_KATEGORILERI = ["market", "kahvehane", "eczane", "kargo", "doviz"];
+const IS_CEVRESI_YARICAP_M = 300;
 
 interface HayatModeli {
   ev: Yer; is: Yer; ucuncu: Yer;
@@ -168,6 +171,29 @@ function konum(b: Baglam, yer: Yer, bas: Zaman, bit: Zaman): Olay {
   return olayEkle(b, "konum", bas, { yer_poi_id: yer.poi_id, rol: yer.rol, bitis: bit });
 }
 
+/**
+ * İş çevresi davranışı: hafta içi öğle arasında iş noktasının yakınındaki bir yere gidilir.
+ * Ödeme disiplinine uyar: kart disiplininde POS kaydı, nakit disiplininde önce ATM çekimi
+ * sonra nakit ödeme. Ödeme kaydı bırakmayan nakit alışverişi de özel kamera kapsamına girer.
+ */
+function isCevresi(b: Baglam, gun: number): void {
+  const r = b.rng;
+  const is = b.model.is;
+  const havuz = IS_CEVRESI_KATEGORILERI.flatMap((k) => b.veri.kategoriye.get(k) ?? [])
+    .filter((p) => p.id !== is.poi_id && mesafeM(p.konum, is.konum) <= IS_CEVRESI_YARICAP_M);
+  if (!havuz.length) return;
+  const hedef = r.sec(havuz);
+  const saat = zaman(gun, r.tam(12, 13), r.tam(0, 55));
+  const odeme = odemeSekli(b.model, saat);
+  if (odeme === "nakit" && r.sans(0.45)) {
+    // Nakitçi önce iş çevresindeki ATM'den çeker.
+    const atm = enYakin(b.veri.kategoriye.get("atm") ?? [], is.konum, IS_CEVRESI_YARICAP_M);
+    if (atm) olayEkle(b, "atm_cekim", ekle(saat, -12), { yer_poi_id: atm.id, rol: "is" });
+  }
+  const tur = hedef.kategori === "eczane" ? "eczane" : hedef.kategori === "doviz" ? "doviz" : "alisveris";
+  olayEkle(b, tur, saat, { yer_poi_id: hedef.id, rol: "is", bitis: ekle(saat, r.tam(20, 45)), odeme: tur === "alisveris" ? odeme : null });
+}
+
 function alisveris(b: Baglam, yakinYer: Yer, z: Zaman, azamiM: number): void {
   const market = enYakin(b.veri.kategoriye.get("market") ?? [], yakinYer.konum, azamiM);
   if (market) olayEkle(b, "alisveris", z, { yer_poi_id: market.id, rol: yakinYer.rol, odeme: odemeSekli(b.model, z) });
@@ -224,7 +250,7 @@ function gunPlani(b: Baglam, gun: number, s: GunSecenekleri): void {
     const varis = ekle(cikis, yol);
     const mesaiBitis = zaman(gun, 17, r.tam(15, 45));
     const mesai = konum(b, is, varis, mesaiBitis);
-    if (r.sans(0.5)) alisveris(b, is, zaman(gun, 12, r.tam(20, 50)), 600);
+    if (r.sans(0.75)) isCevresi(b, gun);
     if (s.doviz) {
       const buro = enYakin(b.veri.kategoriye.get("doviz") ?? [], is.konum, 6000) ?? enYakin(b.veri.kategoriye.get("doviz") ?? [], ev.konum);
       if (buro) olayEkle(b, "doviz", zaman(gun, 13, r.tam(0, 30)), { yer_poi_id: buro.id, rol: "rutin_disi" });

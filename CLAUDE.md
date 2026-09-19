@@ -95,6 +95,7 @@ Aynı sensörün dar sorgusu ucuz, geniş sorgusu pahalıdır (örnek: "son kay�
 * Ulaşım modu: araç, toplu taşıma, karışık. HGS, İstanbulkart, İSPARK kayıtlarını belirler.
 * Ödeme disiplini: hep kart, hep nakit, döviz sonrası nakde geçiş.
 * Spor salonu üyeliği: hedeflerin yaklaşık üçte biri üyedir. Üye olanın üçüncü noktası spor salonu olur ve turnike kaydı bırakır.
+* İş çevresi: hafta içi öğle aralarında iş noktasının yaklaşık 300 metre yakınındaki bir yere gidilir (market, kahvehane, eczane, kargo şubesi, döviz bürosu). Ödeme disiplinine uyar: kart disiplininde POS kaydı, nakit disiplininde önce çevredeki ATM'den çekim sonra nakit ödeme. Nakit ödeme banka kaydı bırakmaz ama özel kamera kapsamına girer. Bu davranış iş yerinin kendisini değil çevresini işaretler; oyuncu ve oracle "bu civarda çalışıyor" çıkarımını yapıp çevredeki noktalara doğrulama sorgusu gönderir.
 * Telefon disiplini: hep açık, geceleri kapalı, son 3 gün kapalı.
 * Şu anki konum: kolayda ev, ortada iş veya üçüncü nokta, zorda rutin dışı bir yer.
 
@@ -109,7 +110,7 @@ Oracle: sadece sızdırılan verilerle hedef tek noktaya indirilebiliyor mu, en 
 * İlçe ve mahalle sınırları: OpenStreetMap idari sınırları (ilçe seviye 6, mahalle seviye 8). İBB portalında sınır çokgeni bulunmadığı için 19 Eylül 2026'da Tolga'nın onayıyla OSM seçildi.
 * Harita karoları: Protomaps PMTiles İstanbul kesiti, çevrimdışı, anahtarsız. Tarayıcı prototipinde OpenFreeMap da kullanılabilir.
 * Kurgusal kameralar: kavşak, meydan, durak ve okul girişlerine kurallı yerleşim, yaklaşık 400 adet, görüş konisi yol yönünden hesaplanır.
-* Kurgusal baz hücreleri: yoğunluğa göre Voronoi, yaklaşık 250 hücre.
+* Kurgusal baz hücreleri: yoğunluğa göre Voronoi, yaklaşık 60 hücre. Hücreler bilinçli olarak geniştir: baz kaydı tek başına konum vermemeli, yalnızca aday kümesini daraltmalıdır. Hedef, yoğun ilçelerde hücre başına 30 ile 50 nokta.
 * Fontlar Google Fonts, ikonlar Lucide, sesler Freesound ve Pixabay (CC0 veya atıflı).
 * Her kaynağın lisansı LICENSES.md içinde tutulur. Bu dosya ilk günden başlar.
 

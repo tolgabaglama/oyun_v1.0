@@ -19,12 +19,14 @@ const rastgele = mulberry32(TOHUM);
 const HAM = "data/raw", ISLENMIS = "data/processed";
 const oku = (yol) => JSON.parse(readFileSync(yol, "utf8"));
 
-const HUCRE_SAYISI = 250;
+const HUCRE_SAYISI = 60;
+// Hücre sayısı bilinçli olarak düşük tutulur: baz istasyonu kaydı tek başına küçük bir alana
+// inmemeli, yalnızca daraltmalı. Hedef, yoğun ilçelerde hücre başına 30 ile 50 POI.
 const KARE_M = 500;               // yoğunluk karesi kenarı
 const TABAN_AGIRLIK = 0.04;       // boş karenin ağırlığı, kırsal kapsama için
 const YOGUNLUK_USSU = 0.7;        // 1 = tam orantılı, 0.5 = çok yumuşatılmış
-const ASGARI_MESAFE_YOGUN_M = 900;   // dolu karelerde iki baz arası en az mesafe
-const ASGARI_MESAFE_SEYREK_M = 3000; // boş karelerde iki baz arası en az mesafe
+const ASGARI_MESAFE_YOGUN_M = 2500;   // dolu karelerde iki baz arası en az mesafe
+const ASGARI_MESAFE_SEYREK_M = 7000; // boş karelerde iki baz arası en az mesafe
 
 // ---- Yoğunluk noktaları --------------------------------------------------------------------
 
