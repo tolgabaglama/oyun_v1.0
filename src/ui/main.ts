@@ -5,6 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { el, temizle } from "./dom.ts";
 import { anaEkran } from "./ekran-ana.ts";
 import { sekmeCubugu, ustSeritCiz, type SekmeKimligi } from "./kabuk.ts";
+import { sekmeDosya } from "./sekme-dosya.ts";
 import { veriYukleWeb, katalogYukleWeb } from "../engine/data-web.ts";
 import { DavaBulunamadi, Oturum } from "../app/oturum.ts";
 import { ayarOku, ayarYaz, turOku, turSil, turYaz } from "../app/depo.ts";
@@ -58,8 +59,24 @@ function hataGoster(mesaj: string): void {
   setTimeout(() => kutu.remove(), 4000);
 }
 
-/** Sekme içerikleri sonraki maddelerde gelir. */
+/** Vurgulanacak sorgu; DOSYA sekmesinden PANO'ya geçerken kullanılır. */
+let vurguluSorgu: string | null = null;
+
 function sekmeIcerigi(sekme: SekmeKimligi): HTMLElement {
+  const o = uyg.oturum!;
+  if (sekme === "dosya") {
+    return sekmeDosya({
+      dosya: o.dosya(),
+      gecmis: o.gecmis(),
+      serit: o.ustSerit(),
+      onSorguSec: (sorguId) => {
+        vurguluSorgu = sorguId;
+        uyg.sekme = "pano";
+        kaydet();
+        ciz();
+      },
+    });
+  }
   return el("div", { sinif: "sekme-icerik yer-tutucu" },
     el("p", {}, `${sekme.toUpperCase()} sekmesi bir sonraki adımda eklenecek.`),
   );
