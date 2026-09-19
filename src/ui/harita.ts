@@ -1,8 +1,13 @@
 // Harita yöneticisi. MapLibre haritası bir kez kurulur ve sekmeler arasında korunur;
 // yeniden çizimde yalnızca kapsayıcı DOM'a geri takılır.
 
-import { Map as HaritaMotoru, AttributionControl, NavigationControl, type MapMouseEvent } from "maplibre-gl";
+import { Map as HaritaMotoru, AttributionControl, NavigationControl, setWorkerUrl, type MapMouseEvent } from "maplibre-gl";
+// MapLibre arka plan çalışanını kendi hesapladığı göreli adresten arar; derlemede bu dosya
+// paket dışında kaldığı için adres Vite'tan alınıp açıkça bildirilir.
+import calisanAdresi from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import type { Konum, NoktaGorunumu, SonucGorunumu } from "../app/gorunum.ts";
+
+setWorkerUrl(calisanAdresi);
 
 const ALTLIK = "https://tiles.openfreemap.org/styles/positron";
 const ISTANBUL: [number, number] = [28.97, 41.04];
