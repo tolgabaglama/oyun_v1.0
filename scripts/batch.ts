@@ -2,8 +2,8 @@
 // Kullanım: npm run batch -- 300
 
 import { veriYukleNode, katalogYukleNode } from "../src/engine/data-node.ts";
-import { davaKur, OracleReddi } from "../src/engine/oracle.ts";
-import { UretimReddi } from "../src/engine/generator.ts";
+import { parHesapla, OracleReddi } from "../src/engine/oracle.ts";
+import { davaUret, UretimReddi } from "../src/engine/generator.ts";
 import type { Dava, Zorluk } from "../src/engine/schema.ts";
 import { davaDogrula } from "../src/engine/schema.ts";
 
@@ -21,17 +21,25 @@ let denetimHatasi = 0;
 const t0 = Date.now();
 for (let seed = 1; seed <= adet; seed++) {
   const zorluk = ZORLUKLAR[seed % 3];
+  let dava: Dava;
   try {
-    const dava = davaKur(seed, zorluk, veri, katalog);
+    dava = davaUret(seed, zorluk, veri, katalog);
+  } catch (e) {
+    const neden = e instanceof UretimReddi ? e.neden : `HATA: ${(e as Error).message}`;
+    red[neden] = (red[neden] ?? 0) + 1;
+    continue;
+  }
+  // Üretilen davanın rolü, oracle kabul etse de etmese de sayılır.
+  const rol = dava.gercek.su_anki_konum.rol;
+  rolToplam[rol] = (rolToplam[rol] ?? 0) + 1;
+  try {
+    dava.par = parHesapla(dava, veri, katalog);
     kabul.push(dava);
-    const rol = dava.gercek.su_anki_konum.rol;
-    rolToplam[rol] = (rolToplam[rol] ?? 0) + 1;
     rolKabul[rol] = (rolKabul[rol] ?? 0) + 1;
     if (davaDogrula(dava, katalog).length) denetimHatasi++;
   } catch (e) {
-    const neden = e instanceof UretimReddi || e instanceof OracleReddi ? e.neden : `HATA: ${(e as Error).message}`;
+    const neden = e instanceof OracleReddi ? e.neden : `HATA: ${(e as Error).message}`;
     red[neden] = (red[neden] ?? 0) + 1;
-    // Reddedilen davanın rolü de sayılsın (oracle reddinde dava nesnesi yok, neden bazında raporlanır).
   }
 }
 const sure = Date.now() - t0;
@@ -95,12 +103,21 @@ for (const d of kabul) {
 }
 for (const [y, n] of [...yollar.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10)) console.log(`  ${y.padEnd(46)} ${String(n).padStart(4)}`);
 
-console.log(`\nŞU ANKI KONUM ROLÜNE GÖRE KABUL`);
-console.log(`  ${"rol".padEnd(12)} ${"kabul".padStart(6)} ${"oran".padStart(8)}`);
+console.log(`\nŞU ANKI KONUM ROLÜNE GÖRE KABUL   (üretilen davalar içinde oracle'ın çözebildiği oran)`);
+console.log(`  ${"rol".padEnd(12)} ${"üretilen".padStart(9)} ${"kabul".padStart(6)} ${"kabul oranı".padStart(12)} ${"kabuller içindeki pay".padStart(22)}`);
 for (const rol of ["ev", "is", "ucuncu", "rutin_disi"]) {
+  const t = rolToplam[rol] ?? 0;
   const n = rolKabul[rol] ?? 0;
-  console.log(`  ${rol.padEnd(12)} ${String(n).padStart(6)} ${`%${((n / kabul.length) * 100).toFixed(1)}`.padStart(8)}`);
+  const oran = t ? `%${((n / t) * 100).toFixed(1)}` : "-";
+  const pay = kabul.length ? `%${((n / kabul.length) * 100).toFixed(1)}` : "-";
+  console.log(`  ${rol.padEnd(12)} ${String(t).padStart(9)} ${String(n).padStart(6)} ${oran.padStart(12)} ${pay.padStart(22)}`);
 }
+
+console.log(`\nSPOR SALONU ÜYELİĞİ`);
+const uye = kabul.filter((d) => d.gercek.spor_salonu_uyesi).length;
+console.log(`  üye olan kabul edilmiş dava: ${uye} / ${kabul.length}  (%${((uye / kabul.length) * 100).toFixed(1)})`);
+const turnikeli = kabul.filter((d) => (d.ozet.sensor_basina.spor_turnike ?? 0) > 0).length;
+console.log(`  turnike kaydı bulunan dava:  ${turnikeli} / ${kabul.length}`);
 
 console.log(`\nSENSÖR KULLANIMI (par yollarında)`);
 const sensorSayim = new Map<string, number>();

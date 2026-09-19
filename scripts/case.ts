@@ -57,10 +57,25 @@ for (const s of katalog.sensorler) {
 console.log(`\nPAR  ${dava.par.deger} puan  (${dava.par.yol.length} sorgu, başlangıç ${dava.par.baslangic_aday} aday)`);
 for (const [i, adim] of dava.par.yol.entries()) {
   const s = sensorMap.get(adim.sensor_id)!;
-  console.log(`  ${i + 1}. ${s.ad.padEnd(34)} ${String(adim.maliyet).padStart(3)}p  ->  ${adim.kalan_aday} aday`);
+  const not = adim.parametreler?.aday_sirasi ? `  (kalan adaylardan ${adim.parametreler.aday_sirasi}. sıradakine)` : "";
+  console.log(`  ${i + 1}. ${s.ad.padEnd(34)} ${String(adim.maliyet).padStart(3)}p  ->  ${adim.kalan_aday} aday${not}`);
 }
 console.log(`\nPAR YOLUNUN DÖNDÜRDÜĞÜ`);
+const gorulen = new Set<string>();
 for (const adim of dava.par.yol) {
+  // Doğrulayıcı adımlar aday kümesine sorulur, sabit parametresi yoktur; gerçek konumla örneklenir.
+  const dogrulayici = Boolean(adim.parametreler?.aday_sirasi);
+  if (dogrulayici) {
+    if (gorulen.has(adim.sensor_id)) continue;
+    gorulen.add(adim.sensor_id);
+    const s = sensorMap.get(adim.sensor_id)!;
+    const kez = dava.par.yol.filter((a) => a.sensor_id === adim.sensor_id).length;
+    console.log(`  ${s.ad} (${s.kurum})  ${kez} kez, kalan adaylara tek tek`);
+    const r = sorgula(dava, veri, katalog, adim.sensor_id, { poi_id: dava.gercek.su_anki_konum.poi_id });
+    for (const k of r.kayitlar.slice(0, 2)) console.log(`     gerçek konumda: ${k.metin}`);
+    if (!r.kayitlar.length) console.log(`     gerçek konumda: eşleşme yok`);
+    continue;
+  }
   const r = sorgula(dava, veri, katalog, adim.sensor_id, adim.parametreler ?? {});
   console.log(`  ${r.sensor_adi} (${r.kurum})`);
   for (const k of r.kayitlar.slice(0, 4)) console.log(`     ${k.metin}`);
