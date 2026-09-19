@@ -4,59 +4,196 @@
   "title": "İZ dava dosyası",
   "description": "Üretici ve el yazımı davaların ortak biçimi. Referans bütünlüğü schema.ts içindeki davaDogrula ile denetlenir.",
   "type": "object",
-  "required": ["surum", "kaynak", "uretici_surumu", "seed", "zorluk", "profil", "gercek", "olaylar", "kayitlar", "par", "ozet"],
+  "required": [
+    "surum",
+    "kaynak",
+    "uretici_surumu",
+    "seed",
+    "zorluk",
+    "profil",
+    "gercek",
+    "olaylar",
+    "kayitlar",
+    "par",
+    "ozet"
+  ],
   "additionalProperties": false,
   "properties": {
-    "surum": { "const": 1 },
-    "kaynak": { "enum": ["uretici", "el_yazimi"] },
-    "uretici_surumu": { "type": "string" },
-    "seed": { "type": "integer" },
-    "zorluk": { "enum": ["kolay", "standart", "uzman"] },
+    "surum": {
+      "const": 1
+    },
+    "kaynak": {
+      "enum": [
+        "uretici",
+        "el_yazimi"
+      ]
+    },
+    "uretici_surumu": {
+      "type": "string"
+    },
+    "seed": {
+      "type": "integer"
+    },
+    "zorluk": {
+      "enum": [
+        "kolay",
+        "standart",
+        "uzman"
+      ]
+    },
     "profil": {
       "type": "object",
-      "required": ["ad", "soyad", "yas", "ihbar_notu"],
+      "required": [
+        "ad",
+        "soyad",
+        "yas",
+        "ihbar_notu"
+      ],
       "properties": {
-        "ad": { "type": "string" },
-        "soyad": { "type": "string" },
-        "yas": { "type": "integer", "minimum": 18, "maximum": 90 },
-        "ihbar_notu": { "type": "string" }
+        "ad": {
+          "type": "string"
+        },
+        "soyad": {
+          "type": "string"
+        },
+        "yas": {
+          "type": "integer",
+          "minimum": 18,
+          "maximum": 90
+        },
+        "ihbar_notu": {
+          "type": "string"
+        }
       }
     },
     "gercek": {
       "type": "object",
-      "required": ["ev", "is", "ucuncu", "ulasim", "odeme", "telefon", "arac_var", "plaka", "kayitli_adres_poi_id", "su_anki_konum", "su_anki_zaman"],
+      "required": [
+        "ev",
+        "is",
+        "ucuncu",
+        "ulasim",
+        "odeme",
+        "telefon",
+        "arac_var",
+        "plaka",
+        "spor_salonu_uyesi",
+        "kayitli_adres_poi_id",
+        "su_anki_konum",
+        "su_anki_zaman"
+      ],
       "properties": {
-        "ev": { "$ref": "#/$defs/yer" },
-        "is": { "$ref": "#/$defs/yer" },
-        "ucuncu": { "$ref": "#/$defs/yer" },
-        "ulasim": { "enum": ["arac", "toplu_tasima", "karisik"] },
-        "odeme": { "enum": ["hep_kart", "hep_nakit", "doviz_sonrasi_nakit"] },
-        "telefon": { "enum": ["hep_acik", "geceleri_kapali", "son_3_gun_kapali"] },
-        "arac_var": { "type": "boolean" },
-        "plaka": { "type": ["string", "null"] },
-        "kayitli_adres_poi_id": { "type": ["string", "null"] },
-        "su_anki_konum": { "$ref": "#/$defs/yer" },
-        "su_anki_zaman": { "$ref": "#/$defs/zaman" }
+        "ev": {
+          "$ref": "#/$defs/yer"
+        },
+        "is": {
+          "$ref": "#/$defs/yer"
+        },
+        "ucuncu": {
+          "$ref": "#/$defs/yer"
+        },
+        "ulasim": {
+          "enum": [
+            "arac",
+            "toplu_tasima",
+            "karisik"
+          ]
+        },
+        "odeme": {
+          "enum": [
+            "hep_kart",
+            "hep_nakit",
+            "doviz_sonrasi_nakit"
+          ]
+        },
+        "telefon": {
+          "enum": [
+            "hep_acik",
+            "geceleri_kapali",
+            "son_3_gun_kapali"
+          ]
+        },
+        "arac_var": {
+          "type": "boolean"
+        },
+        "plaka": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kayitli_adres_poi_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "su_anki_konum": {
+          "$ref": "#/$defs/yer"
+        },
+        "su_anki_zaman": {
+          "$ref": "#/$defs/zaman"
+        },
+        "spor_salonu_uyesi": {
+          "type": "boolean"
+        }
       }
     },
-    "olaylar": { "type": "array", "items": { "$ref": "#/$defs/olay" } },
-    "kayitlar": { "type": "array", "items": { "$ref": "#/$defs/kayit" } },
+    "olaylar": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/olay"
+      }
+    },
+    "kayitlar": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/kayit"
+      }
+    },
     "par": {
       "type": "object",
-      "required": ["deger", "baslangic_aday", "yol"],
+      "required": [
+        "deger",
+        "baslangic_aday",
+        "yol"
+      ],
       "properties": {
-        "deger": { "type": "integer", "minimum": 0 },
-        "baslangic_aday": { "type": "integer", "minimum": 1 },
+        "deger": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "baslangic_aday": {
+          "type": "integer",
+          "minimum": 1
+        },
         "yol": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["sensor_id", "parametreler", "maliyet", "kalan_aday"],
+            "required": [
+              "sensor_id",
+              "parametreler",
+              "maliyet",
+              "kalan_aday"
+            ],
             "properties": {
-              "sensor_id": { "type": "string" },
-              "parametreler": { "type": ["object", "null"] },
-              "maliyet": { "type": "integer" },
-              "kalan_aday": { "type": "integer", "minimum": 0 }
+              "sensor_id": {
+                "type": "string"
+              },
+              "parametreler": {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "maliyet": {
+                "type": "integer"
+              },
+              "kalan_aday": {
+                "type": "integer",
+                "minimum": 0
+              }
             }
           }
         }
@@ -64,98 +201,303 @@
     },
     "ozet": {
       "type": "object",
-      "required": ["toplam_kayit", "gurultu_kayit", "sensor_basina"],
+      "required": [
+        "toplam_kayit",
+        "gurultu_kayit",
+        "sensor_basina"
+      ],
       "properties": {
-        "toplam_kayit": { "type": "integer" },
-        "gurultu_kayit": { "type": "integer" },
-        "sensor_basina": { "type": "object", "additionalProperties": { "type": "integer" } }
+        "toplam_kayit": {
+          "type": "integer"
+        },
+        "gurultu_kayit": {
+          "type": "integer"
+        },
+        "sensor_basina": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        }
       }
     }
   },
   "$defs": {
     "zaman": {
       "type": "object",
-      "required": ["gun", "saat", "dakika"],
+      "required": [
+        "gun",
+        "saat",
+        "dakika"
+      ],
       "properties": {
-        "gun": { "type": "integer", "minimum": 1, "maximum": 14 },
-        "saat": { "type": "integer", "minimum": 0, "maximum": 23 },
-        "dakika": { "type": "integer", "minimum": 0, "maximum": 59 }
+        "gun": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 14
+        },
+        "saat": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 23
+        },
+        "dakika": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 59
+        }
       }
     },
     "konum": {
-      "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2,
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2,
       "description": "[boylam, enlem]"
     },
     "yer": {
       "type": "object",
-      "required": ["poi_id", "rol", "kategori", "ilce", "mahalle", "konum", "hucre_kodu", "yaka"],
+      "required": [
+        "poi_id",
+        "rol",
+        "kategori",
+        "ilce",
+        "mahalle",
+        "konum",
+        "hucre_kodu",
+        "yaka"
+      ],
       "properties": {
-        "poi_id": { "type": "string" },
-        "rol": { "enum": ["ev", "is", "ucuncu", "rutin_disi"] },
-        "kategori": { "type": "string" },
-        "ilce": { "type": "string" },
-        "mahalle": { "type": ["string", "null"] },
-        "konum": { "$ref": "#/$defs/konum" },
-        "hucre_kodu": { "type": "string" },
-        "yaka": { "enum": ["avrupa", "anadolu"] }
+        "poi_id": {
+          "type": "string"
+        },
+        "rol": {
+          "enum": [
+            "ev",
+            "is",
+            "ucuncu",
+            "rutin_disi"
+          ]
+        },
+        "kategori": {
+          "type": "string"
+        },
+        "ilce": {
+          "type": "string"
+        },
+        "mahalle": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "konum": {
+          "$ref": "#/$defs/konum"
+        },
+        "hucre_kodu": {
+          "type": "string"
+        },
+        "yaka": {
+          "enum": [
+            "avrupa",
+            "anadolu"
+          ]
+        }
       }
     },
     "olay": {
       "type": "object",
-      "required": ["id", "tur", "zaman", "bitis", "yer_poi_id", "rol", "yolculuk", "odeme", "telefon_acik"],
+      "required": [
+        "id",
+        "tur",
+        "zaman",
+        "bitis",
+        "yer_poi_id",
+        "rol",
+        "yolculuk",
+        "odeme",
+        "telefon_acik"
+      ],
       "properties": {
-        "id": { "type": "string", "pattern": "^O[0-9]{4,}$" },
-        "tur": { "type": "string" },
-        "zaman": { "$ref": "#/$defs/zaman" },
-        "bitis": { "oneOf": [{ "$ref": "#/$defs/zaman" }, { "type": "null" }] },
-        "yer_poi_id": { "type": ["string", "null"] },
-        "rol": { "enum": ["ev", "is", "ucuncu", "rutin_disi", null] },
+        "id": {
+          "type": "string",
+          "pattern": "^O[0-9]{4,}$"
+        },
+        "tur": {
+          "type": "string"
+        },
+        "zaman": {
+          "$ref": "#/$defs/zaman"
+        },
+        "bitis": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/zaman"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "yer_poi_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rol": {
+          "enum": [
+            "ev",
+            "is",
+            "ucuncu",
+            "rutin_disi",
+            null
+          ]
+        },
         "yolculuk": {
           "oneOf": [
-            { "type": "null" },
+            {
+              "type": "null"
+            },
             {
               "type": "object",
-              "required": ["nereden_poi_id", "nereye_poi_id", "mod", "duraklar", "gecisler"],
+              "required": [
+                "nereden_poi_id",
+                "nereye_poi_id",
+                "mod",
+                "duraklar",
+                "gecisler"
+              ],
               "properties": {
-                "nereden_poi_id": { "type": "string" },
-                "nereye_poi_id": { "type": "string" },
-                "mod": { "enum": ["arac", "toplu_tasima", "karisik"] },
-                "duraklar": { "type": "array", "items": { "type": "string" } },
+                "nereden_poi_id": {
+                  "type": "string"
+                },
+                "nereye_poi_id": {
+                  "type": "string"
+                },
+                "mod": {
+                  "enum": [
+                    "arac",
+                    "toplu_tasima",
+                    "karisik"
+                  ]
+                },
+                "duraklar": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
                 "gecisler": {
                   "type": "array",
                   "items": {
                     "type": "object",
-                    "required": ["gecis_id", "yon"],
-                    "properties": { "gecis_id": { "type": "string" }, "yon": { "enum": ["avrupa", "anadolu"] } }
+                    "required": [
+                      "gecis_id",
+                      "yon"
+                    ],
+                    "properties": {
+                      "gecis_id": {
+                        "type": "string"
+                      },
+                      "yon": {
+                        "enum": [
+                          "avrupa",
+                          "anadolu"
+                        ]
+                      }
+                    }
                   }
                 }
               }
             }
           ]
         },
-        "odeme": { "enum": ["kart", "nakit", null] },
-        "telefon_acik": { "type": "boolean" }
+        "odeme": {
+          "enum": [
+            "kart",
+            "nakit",
+            null
+          ]
+        },
+        "telefon_acik": {
+          "type": "boolean"
+        }
       }
     },
     "kayit": {
       "type": "object",
-      "required": ["id", "sensor_id", "olay_id", "gurultu", "zaman", "alanlar", "geometri"],
+      "required": [
+        "id",
+        "sensor_id",
+        "olay_id",
+        "gurultu",
+        "zaman",
+        "alanlar",
+        "geometri"
+      ],
       "properties": {
-        "id": { "type": "string", "pattern": "^K[0-9]{4,}$" },
-        "sensor_id": { "type": "string" },
-        "olay_id": { "type": ["string", "null"] },
-        "gurultu": { "type": ["string", "null"] },
-        "zaman": { "$ref": "#/$defs/zaman" },
-        "alanlar": { "type": "object", "additionalProperties": { "type": ["string", "number", "boolean", "null"] } },
+        "id": {
+          "type": "string",
+          "pattern": "^K[0-9]{4,}$"
+        },
+        "sensor_id": {
+          "type": "string"
+        },
+        "olay_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "gurultu": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "zaman": {
+          "$ref": "#/$defs/zaman"
+        },
+        "alanlar": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          }
+        },
         "geometri": {
           "oneOf": [
-            { "type": "null" },
+            {
+              "type": "null"
+            },
             {
               "type": "object",
-              "required": ["tip", "id"],
+              "required": [
+                "tip",
+                "id"
+              ],
               "properties": {
-                "tip": { "enum": ["poi", "kamera", "hucre", "mahalle", "durak", "istasyon", "gecis"] },
-                "id": { "type": "string" }
+                "tip": {
+                  "enum": [
+                    "poi",
+                    "kamera",
+                    "hucre",
+                    "mahalle",
+                    "durak",
+                    "istasyon",
+                    "gecis"
+                  ]
+                },
+                "id": {
+                  "type": "string"
+                }
               }
             }
           ]

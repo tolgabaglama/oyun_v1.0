@@ -62,6 +62,7 @@ Kademe 2, hizmet kayıtları, maliyet 60
 * Kargo teslimatı: son teslimat adresi. Gürültü: iş yerine teslimat.
 * Eczane reçete karşılama: eczane noktası ve tarih.
 * Kamera arşivi, tekil: seçilen kameranın seçilen saat aralığı. Ayak izi koni. Sonuç: eşleşme var veya yok, varsa yön.
+* Spor salonu turnike kaydı: üyelik turnikesinden 14 günlük giriş ve çıkış saatleri. Yalnızca spor salonu noktalarında vardır.
 
 Kademe 3, mahrem veri, maliyet 120
 * Baz istasyonu, son kayıt: telefonun en son göründüğü hücre.
@@ -69,13 +70,23 @@ Kademe 3, mahrem veri, maliyet 120
 * POS harcamaları: iş yeri kategorisi ve nokta, son 14 gün.
 * Döviz bürosu işlemi: nokta, tutar aralığı, tarih.
 * Ev interneti IP: abonelik adresi, son bağlantı saati.
+* Özel kamera talebi, son 24 saat: seçilen bir noktanın kendi kamerasından saha ekibi kayıt ister. Ayak izi nokta. Sonuç: eşleşme var veya yok, saat, giriş veya çıkış yönü.
 
 Kademe 4, ağır döküm, maliyet 200
 * 14 günlük tam baz dökümü.
 * Tam banka dökümü.
 * Kamera geniş tarama: bir ilçenin tüm kameralarında eşleşme.
+* Özel kamera talebi, 14 gün: aynı nokta, tüm pencere.
 
 Aynı sensörün dar sorgusu ucuz, geniş sorgusu pahalıdır (örnek: "son kayıt" 120, "14 gün" 200).
+
+Özel kamera talebinin kapsama ve saklama kuralları sensör tanımında veri olarak durur, kodda özel durum yazılmaz:
+* Kamera varlığı noktanın kategorisine bağlıdır. Zincir market, eczane, spor salonu, cami ve benzinlikte her zaman vardır. Küçük dükkân, kahvehane, ATM, döviz ve kargo şubesinde yüzde 60. Karar nokta başına bir kez verilir ve dava boyunca değişmez.
+* Otopark ve duraklar için özel talep kabul edilmez, onlar ŞEHİRGÖZ kapsamındadır.
+* Saklama süresi nokta başına 7 ile 30 gün arasıdır. Süresi geçen kayıt silinmiş döner, konum bilgisi vermez.
+* Yüzde 15 ihtimalle görüntü bulanıktır: eşleşme görünür ama kesin saat yerine saat dilimi verilir, yön bilinmez.
+
+Özel kamera talebi oracle için doğrulayıcıdır, konumlayıcı değildir: oyuncu hangi noktayı soracağını bilmez. Aday kümesi başka sensörlerle daraldıktan sonra kalan adaylara tek tek sorulur; par hesabında maliyeti kalan aday sayısı eksi bir sorgu sayılır. Eşleşme yalnızca son 6 saat içindeyse şu anki konumu kanıtlar.
 
 ## 6. Hedefin hayat modeli (üretici)
 
@@ -83,6 +94,7 @@ Aynı sensörün dar sorgusu ucuz, geniş sorgusu pahalıdır (örnek: "son kay�
 * Ev, iş, üçüncü nokta (akraba evi, spor salonu, kahvehane, cami). Hepsi gerçek POI noktalarından.
 * Ulaşım modu: araç, toplu taşıma, karışık. HGS, İstanbulkart, İSPARK kayıtlarını belirler.
 * Ödeme disiplini: hep kart, hep nakit, döviz sonrası nakde geçiş.
+* Spor salonu üyeliği: hedeflerin yaklaşık üçte biri üyedir. Üye olanın üçüncü noktası spor salonu olur ve turnike kaydı bırakır.
 * Telefon disiplini: hep açık, geceleri kapalı, son 3 gün kapalı.
 * Şu anki konum: kolayda ev, ortada iş veya üçüncü nokta, zorda rutin dışı bir yer.
 

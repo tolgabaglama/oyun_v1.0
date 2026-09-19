@@ -30,7 +30,7 @@ export type Konum = [number, number];
 // ---- Sensör kataloğu tipleri (sensors.json) ------------------------------------------------
 
 export type AyakIziTipi = "nokta" | "koni" | "hucre" | "adres" | "guzergah";
-export type SertKisitTipi = "hucre" | "yaka" | "yaricap" | "aday_yer";
+export type SertKisitTipi = "hucre" | "yaka" | "yaricap" | "aday_yer" | "dogrulayici";
 
 export interface SensorKapsam {
   tip: "sabit" | "son" | "pencere_gun";
@@ -39,7 +39,18 @@ export interface SensorKapsam {
 
 export interface GurultuKurali {
   tip: string;
-  olasilik: number;
+  olasilik?: number;
+  /** Saklama süresi kuralları için gün aralığı. */
+  gun_en_az?: number;
+  gun_en_cok?: number;
+}
+
+/** Sensörün yalnızca belirli POI kategorilerinde kayıt bırakması. Oran POI başına bir kez çözülür. */
+export interface Kapsama {
+  alan: "kategori";
+  oranlar: Record<string, number>;
+  varsayilan: number;
+  aciklama?: string;
 }
 
 export interface SertKisit {
@@ -54,7 +65,7 @@ export interface SertKisit {
 
 export interface SensorParametre {
   ad: string;
-  tip: "kamera" | "ilce" | "gun" | "saat";
+  tip: "kamera" | "ilce" | "gun" | "saat" | "poi";
   zorunlu: boolean;
 }
 
@@ -76,6 +87,7 @@ export interface SensorTanimi {
   odeme_gerekir?: Odeme;
   birlesik?: string[];
   yakalama_olasiligi: number;
+  kapsama?: Kapsama;
   yakalama_yaricapi_m?: number;
   belirsizlik_m?: number;
   alanlar: string[];
@@ -127,6 +139,8 @@ export interface GizliGercek {
   telefon: TelefonDisiplini;
   arac_var: boolean;
   plaka: string | null;
+  /** Üçüncü noktası spor salonu olan hedefin üyeliği vardır; turnike kaydı bundan doğar. */
+  spor_salonu_uyesi: boolean;
   /** Kayıtlı ikamet farklıysa (eski adres gürültüsü için) buraya yazılır, yoksa null. */
   kayitli_adres_poi_id: string | null;
   su_anki_konum: Yer;

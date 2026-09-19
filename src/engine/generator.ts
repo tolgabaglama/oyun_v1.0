@@ -51,6 +51,7 @@ const RUTIN_DISI_KATEGORILERI = ["market", "kahvehane", "spor_salonu", "cami", "
 
 interface HayatModeli {
   ev: Yer; is: Yer; ucuncu: Yer;
+  sporSalonuUyesi: boolean;
   ulasim: UlasimModu; odeme: OdemeDisiplini; telefon: TelefonDisiplini;
   arac_var: boolean; plaka: string | null;
   dovizGunu: number | null;
@@ -81,7 +82,12 @@ function hayatModeliKur(veri: Veri, rng: Rng): HayatModeli {
   if (!isPoi) throw new UretimReddi("is_bulunamadi");
   const ucuncuKosul = (yaricap: number) => (p: Poi) =>
     p.id !== evPoi.id && p.id !== isPoi.id && (mesafeM(p.konum, evPoi.konum) <= yaricap || mesafeM(p.konum, isPoi.konum) <= yaricap);
-  const ucuncuPoi = kategoridenSec(veri, rng, UCUNCU_KATEGORILERI, ucuncuKosul(3000)) ?? kategoridenSec(veri, rng, UCUNCU_KATEGORILERI, ucuncuKosul(6000));
+  // Spor salonu üyeliği: hedeflerin üçte biri üyedir, üçüncü noktası spor salonu olur.
+  const uye = rng.sans(0.35);
+  const ucuncuHavuz = uye ? ["spor_salonu"] : UCUNCU_KATEGORILERI;
+  const ucuncuPoi = kategoridenSec(veri, rng, ucuncuHavuz, ucuncuKosul(3000))
+    ?? kategoridenSec(veri, rng, ucuncuHavuz, ucuncuKosul(6000))
+    ?? kategoridenSec(veri, rng, UCUNCU_KATEGORILERI, ucuncuKosul(6000));
   if (!ucuncuPoi) throw new UretimReddi("ucuncu_bulunamadi");
 
   const ulasim = rng.agirlikli<UlasimModu>([["arac", 0.4], ["toplu_tasima", 0.4], ["karisik", 0.2]]);
@@ -90,6 +96,7 @@ function hayatModeliKur(veri: Veri, rng: Rng): HayatModeli {
   const telefon = rng.agirlikli<TelefonDisiplini>([["hep_acik", 0.5], ["geceleri_kapali", 0.3], ["son_3_gun_kapali", 0.2]]);
   return {
     ev: yerYap(veri, evPoi, "ev"), is: yerYap(veri, isPoi, "is"), ucuncu: yerYap(veri, ucuncuPoi, "ucuncu"),
+    sporSalonuUyesi: ucuncuPoi.kategori === "spor_salonu",
     ulasim, odeme, telefon, arac_var, plaka: arac_var ? plakaUret(rng) : null,
     dovizGunu: odeme === "doviz_sonrasi_nakit" ? rng.tam(4, 8) : null,
   };
@@ -327,6 +334,8 @@ function rutinKur(veri: Veri, rng: Rng, model: HayatModeli, zorluk: Zorluk): { o
 interface KayitBaglami {
   veri: Veri; rng: Rng; model: HayatModeli; suAn: Zaman; sayac: number;
   kayitliAdres: Poi | null;
+  /** Kapsama ve saklama kararlarının tohumu; dava boyunca sabittir. */
+  seed: number;
 }
 
 const PUSULA = ["K", "KD", "D", "GD", "G", "GB", "B", "KB"];
@@ -379,7 +388,17 @@ const ISLEYICILER: Record<string, Isleyici> = {
   },
   nokta(k, sensor, olay) {
     const poi = k.veri.poiMap.get(olay.yer_poi_id!)!;
+    if (!kapsamdaMi(sensor, poi, k.seed)) return [];
     const ek: Record<string, string | number | boolean | null> = {};
+    if (sensor.alanlar.includes("eslesme")) {
+      ek.eslesme = "var";
+      ek.yon = olay.tur === "konum" && olay.bitis && zamanDakika(olay.bitis) < zamanDakika(k.suAn) ? "çıkış" : "giriş";
+    }
+    if (sensor.alanlar.includes("giris_saat")) {
+      const bitis = olay.bitis ?? olay.zaman;
+      ek.giris_saat = `${String(olay.zaman.saat).padStart(2, "0")}:${String(olay.zaman.dakika).padStart(2, "0")}`;
+      ek.cikis_saat = `${String(bitis.saat).padStart(2, "0")}:${String(bitis.dakika).padStart(2, "0")}`;
+    }
     let geometri: GeometriRef | null = { tip: "poi", id: poi.id };
     if (sensor.belirsizlik_m) {
       // Kaba konum: gerçek noktanın etrafında belirsizlik yarıçapı içinde sapma.
@@ -434,6 +453,25 @@ const ISLEYICILER: Record<string, Isleyici> = {
   },
 };
 
+/**
+ * Sensörün kapsama tablosuna göre bu POI'de kayıt bırakılır mı. Karar POI başına bir kez
+ * ve deterministik verilir: aynı POI dava boyunca ya kapsamdadır ya değildir.
+ */
+function kapsamdaMi(sensor: SensorTanimi, poi: Poi | undefined, seed: number): boolean {
+  if (!sensor.kapsama || !poi) return true;
+  const oran = sensor.kapsama.oranlar[poi[sensor.kapsama.alan]] ?? sensor.kapsama.varsayilan;
+  if (oran >= 1) return true;
+  if (oran <= 0) return false;
+  return rngOlustur((seed ^ metinTohumu(`${sensor.id}:${poi.id}`)) >>> 0).sayi() < oran;
+}
+
+/** Kameranın kayıt saklama süresi, POI başına deterministik gün sayısı. */
+function saklamaGunu(sensor: SensorTanimi, poi: Poi, seed: number): number | null {
+  const kural = sensor.gurultu.find((g) => g.tip === "saklama_suresi_doldu");
+  if (!kural) return null;
+  return rngOlustur((seed ^ metinTohumu(`saklama:${sensor.id}:${poi.id}`)) >>> 0).tam(kural.gun_en_az ?? 7, kural.gun_en_cok ?? 30);
+}
+
 function olayUyar(sensor: SensorTanimi, olay: Olay): boolean {
   if (!sensor.olaylar.includes(olay.tur)) return false;
   if (sensor.roller && (!olay.rol || !sensor.roller.includes(olay.rol))) return false;
@@ -447,12 +485,13 @@ function olayUyar(sensor: SensorTanimi, olay: Olay): boolean {
 /** Gürültü kuralları, tipine göre genel uygulanır. */
 function gurultuUygula(k: KayitBaglami, sensor: SensorTanimi, kayitlar: Kayit[]): Kayit[] {
   const rng = k.rng.dal(`gurultu:${sensor.id}`);
+  const sans = (kural: { olasilik?: number }) => rng.sans(kural.olasilik ?? 0);
   let out = kayitlar;
   for (const kural of sensor.gurultu) {
     switch (kural.tip) {
       case "eski_adres":
       case "baskasinin_aboneligi": {
-        if (!out.length || !rng.sans(kural.olasilik)) break;
+        if (!out.length || !sans(kural)) break;
         // Adres başka bir POI'ye kayar. Nüfus kaydında bu adres gizli gerçeğe de yazılır.
         const sahte = k.kayitliAdres ?? rng.sec(k.veri.kategoriye.get("market")!);
         if (kural.tip === "eski_adres") k.kayitliAdres = sahte;
@@ -468,7 +507,7 @@ function gurultuUygula(k: KayitBaglami, sensor: SensorTanimi, kayitlar: Kayit[])
       case "adas": {
         const ekler: Kayit[] = [];
         for (const kayit of out) {
-          if (!rng.sans(kural.olasilik)) continue;
+          if (!sans(kural)) continue;
           const kategori = String(kayit.alanlar.kategori ?? k.veri.poiMap.get(String(kayit.alanlar.poi_id))?.kategori ?? "market");
           const sahte = rng.sec(k.veri.kategoriye.get(kategori) ?? k.veri.poiler);
           const z = zaman(rng.tam(1, BUGUN), rng.tam(9, 21), rng.tam(0, 59));
@@ -481,7 +520,7 @@ function gurultuUygula(k: KayitBaglami, sensor: SensorTanimi, kayitlar: Kayit[])
       }
       case "komsu_hucre": {
         out = out.map((kayit) => {
-          if (!rng.sans(kural.olasilik)) return kayit;
+          if (!sans(kural)) return kayit;
           const h = k.veri.hucreMap.get(String(kayit.alanlar.hucre_kodu));
           if (!h || !h.komsular.length) return kayit;
           const komsu = rng.sec(h.komsular);
@@ -492,16 +531,36 @@ function gurultuUygula(k: KayitBaglami, sensor: SensorTanimi, kayitlar: Kayit[])
       case "sahte_eslesme": {
         const ekler: Kayit[] = [];
         for (const kayit of out) {
-          if (!rng.sans(kural.olasilik)) continue;
+          if (!sans(kural)) continue;
           const kam = rng.sec(k.veri.kameralar);
           ekler.push(yeniKayit(k, sensor, null, kayit.zaman, { ...kayit.alanlar, kamera_kodu: kam.kod, yon: rng.sec(PUSULA) }, { tip: "kamera", id: kam.kod }, "sahte_eslesme"));
         }
         out = [...out, ...ekler];
         break;
       }
+      case "saklama_suresi_doldu": {
+        // Kaydın POI'sine ait saklama süresi geçtiyse içerik silinir, eşleşme bilgisi kalmaz.
+        out = out.map((kayit) => {
+          const poi = k.veri.poiMap.get(String(kayit.alanlar.poi_id));
+          if (!poi) return kayit;
+          const gun = saklamaGunu(sensor, poi, k.seed);
+          if (gun === null || BUGUN - kayit.zaman.gun <= gun) return kayit;
+          return yeniKayit(k, sensor, null, kayit.zaman, { ...kayit.alanlar, eslesme: "silinmiş", saat: "bilinmiyor", yon: null }, null, "saklama_suresi_doldu");
+        });
+        break;
+      }
+      case "bulanik_goruntu": {
+        out = out.map((kayit) => {
+          if (kayit.gurultu !== null || !sans(kural)) return kayit;
+          const s = Number(String(kayit.alanlar.saat).slice(0, 2));
+          const dilim = s < 6 ? "gece" : s < 12 ? "sabah" : s < 18 ? "öğleden sonra" : "akşam";
+          return yeniKayit(k, sensor, null, kayit.zaman, { ...kayit.alanlar, saat: dilim, yon: null }, kayit.geometri, "bulanik_goruntu");
+        });
+        break;
+      }
       case "gecikmeli_kayit": {
         out = out.map((kayit) => {
-          if (!rng.sans(kural.olasilik)) return kayit;
+          if (!sans(kural)) return kayit;
           const z = ekle(kayit.zaman, rng.tam(60, 180));
           if (z.gun > BUGUN) return kayit;
           return yeniKayit(k, sensor, null, z, { ...kayit.alanlar, gun: z.gun, saat: `${String(z.saat).padStart(2, "0")}:${String(z.dakika).padStart(2, "0")}` }, kayit.geometri, "gecikmeli_kayit");
@@ -513,8 +572,8 @@ function gurultuUygula(k: KayitBaglami, sensor: SensorTanimi, kayitlar: Kayit[])
   return out;
 }
 
-function kayitlariTuret(veri: Veri, rng: Rng, model: HayatModeli, olaylar: Olay[], suAn: Zaman, katalog: SensorKatalogu): { kayitlar: Kayit[]; kayitliAdres: Poi | null } {
-  const k: KayitBaglami = { veri, rng, model, suAn, sayac: 0, kayitliAdres: null };
+function kayitlariTuret(veri: Veri, rng: Rng, model: HayatModeli, olaylar: Olay[], suAn: Zaman, katalog: SensorKatalogu, seed: number): { kayitlar: Kayit[]; kayitliAdres: Poi | null } {
+  const k: KayitBaglami = { veri, rng, model, suAn, sayac: 0, kayitliAdres: null, seed };
   const sensorKayitlari = new Map<string, Kayit[]>();
   const sensorMap = new Map(katalog.sensorler.map((s) => [s.id, s]));
 
@@ -598,7 +657,7 @@ export function davaUret(seed: number, zorluk: Zorluk, veri: Veri, katalog: Sens
   const rng = rngOlustur((seed ^ metinTohumu(`${zorluk}:${URETICI_SURUMU}`)) >>> 0);
   const model = hayatModeliKur(veri, rng.dal("model"));
   const rutin = rutinKur(veri, rng.dal("rutin"), model, zorluk);
-  const { kayitlar, kayitliAdres } = kayitlariTuret(veri, rng.dal("kayit"), model, rutin.olaylar, rutin.suAn, katalog);
+  const { kayitlar, kayitliAdres } = kayitlariTuret(veri, rng.dal("kayit"), model, rutin.olaylar, rutin.suAn, katalog, seed);
 
   const suAnkiYer: Yer = rutin.hedefRol === "ev" ? model.ev : rutin.hedefRol === "is" ? model.is : rutin.hedefRol === "ucuncu" ? model.ucuncu : rutin.rutinDisi!;
   // Şu anı kapsayan konum olayı gerçekten hedef yerde mi (plan sapması kontrolü).
@@ -607,7 +666,7 @@ export function davaUret(seed: number, zorluk: Zorluk, veri: Veri, katalog: Sens
 
   const gercek: GizliGercek = {
     ev: model.ev, is: model.is, ucuncu: model.ucuncu, ulasim: model.ulasim, odeme: model.odeme, telefon: model.telefon,
-    arac_var: model.arac_var, plaka: model.plaka, kayitli_adres_poi_id: kayitliAdres?.id ?? null,
+    arac_var: model.arac_var, plaka: model.plaka, spor_salonu_uyesi: model.sporSalonuUyesi, kayitli_adres_poi_id: kayitliAdres?.id ?? null,
     su_anki_konum: { ...suAnkiYer }, su_anki_zaman: rutin.suAn,
   };
   const sensorBasina: Record<string, number> = {};

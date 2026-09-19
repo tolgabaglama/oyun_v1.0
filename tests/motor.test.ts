@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { veriYukleNode, katalogYukleNode } from "../src/engine/data-node.ts";
 import { davaUret, UretimReddi, bagVar } from "../src/engine/generator.ts";
-import { davaKur, parHesapla, kisitHesapla, kisitlariUygula, tekNoktaMi, OracleReddi, DOGRU_YARICAP_M } from "../src/engine/oracle.ts";
+import { davaKur, parHesapla, kisitHesapla, kisitlariUygula, tekNoktaMi, dogrulayiciHesapla, OracleReddi, DOGRU_YARICAP_M } from "../src/engine/oracle.ts";
 import { davaDogrula, zamanDakika, type Dava, type SensorKatalogu, type Zorluk } from "../src/engine/schema.ts";
 import type { Veri } from "../src/engine/data.ts";
 import { sorgula, kullanilabilirSensorler, SorguHatasi } from "../src/engine/query.ts";
@@ -127,6 +127,36 @@ describe("gerçekle tutarlılık", () => {
     }
   });
 
+  it("spor salonu üyeliği olmayan hedefte turnike kaydı oluşmaz", () => {
+    for (const d of ornekler) {
+      if (d.gercek.spor_salonu_uyesi) continue;
+      const turnike = d.kayitlar.filter((k) => k.sensor_id === "spor_turnike");
+      for (const k of turnike) {
+        const poi = veri.poiMap.get(String(k.alanlar.poi_id))!;
+        expect(poi.kategori).toBe("spor_salonu");
+      }
+    }
+  });
+
+  it("özel kamera kaydı yalnızca kapsamdaki kategorilerde oluşur", () => {
+    const sensor = katalog.sensorler.find((s) => s.id === "ozel_kamera_genis")!;
+    for (const d of ornekler) {
+      for (const k of d.kayitlar.filter((x) => x.sensor_id === sensor.id)) {
+        const poi = veri.poiMap.get(String(k.alanlar.poi_id))!;
+        expect(sensor.kapsama!.oranlar[poi.kategori] ?? sensor.kapsama!.varsayilan).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("saklama süresi dolmuş kamera kaydı konum bilgisi vermez", () => {
+    for (const d of ornekler) {
+      for (const k of d.kayitlar.filter((x) => x.gurultu === "saklama_suresi_doldu")) {
+        expect(k.alanlar.eslesme).toBe("silinmiş");
+        expect(k.geometri).toBeNull();
+      }
+    }
+  });
+
   it("şu anki konumun geçmiş kayıtlarda en az bir bağı vardır", () => {
     for (const d of ornekler) expect(bagVar(d, veri)).toBe(true);
   });
@@ -144,14 +174,23 @@ describe("gerçekle tutarlılık", () => {
 describe("oracle", () => {
   it("par yolunu uygulayınca tek adaya iner", () => {
     for (const d of ornekler) {
-      const kisitlar = d.par.yol.map((adim) => {
-        const s = katalog.sensorler.find((x) => x.id === adim.sensor_id)!;
-        return kisitHesapla(d, veri, s, true)!;
-      });
+      const sensorler = d.par.yol.map((adim) => katalog.sensorler.find((x) => x.id === adim.sensor_id)!);
+      const kisitlar = sensorler
+        .filter((s) => s.sert_kisit!.tip !== "dogrulayici")
+        .map((s) => kisitHesapla(d, veri, s, true)!);
       expect(kisitlar.every(Boolean)).toBe(true);
       const adaylar = kisitlariUygula(veri, kisitlar);
       expect(adaylar.has(d.gercek.su_anki_konum.poi_id)).toBe(true);
-      expect(tekNoktaMi(veri, adaylar)).toBe(true);
+      const dogrulayici = sensorler.filter((s) => s.sert_kisit!.tip === "dogrulayici");
+      if (!dogrulayici.length) {
+        expect(tekNoktaMi(veri, adaylar)).toBe(true);
+      } else {
+        // Doğrulayıcı adımlar kalan adayları tek tek eler; kısıtlar sonrası aday sayısı sınırlı olmalı.
+        expect(adaylar.size).toBeLessThanOrEqual(9);
+        const d2 = dogrulayiciHesapla(d, veri, dogrulayici[0])!;
+        expect(d2.gercekte_eslesme).toBe(true);
+        expect(d.par.yol.filter((a) => a.sensor_id === dogrulayici[0].id).length).toBe(Math.max(1, adaylar.size - 1));
+      }
     }
   });
 
@@ -167,6 +206,14 @@ describe("oracle", () => {
       expect(d.par.yol.length).toBeGreaterThanOrEqual(2);
       const enPahali = Math.max(...d.par.yol.map((a) => a.maliyet));
       expect(d.par.deger).toBeGreaterThan(enPahali);
+    }
+  });
+
+  it("doğrulayıcı sensör tek başına kısıt üretmez", () => {
+    for (const d of ornekler.slice(0, 10)) {
+      for (const s of katalog.sensorler.filter((x) => x.sert_kisit?.tip === "dogrulayici")) {
+        expect(kisitHesapla(d, veri, s, true)).toBeNull();
+      }
     }
   });
 

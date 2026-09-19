@@ -44,13 +44,16 @@
     "adas": "Aynı isimli ikinci kişi. Kayıt hedefin hiç gitmediği rastgele bir noktada.",
     "komsu_hucre": "Baz kaydı gerçek hücrenin komşusuna sıçradı.",
     "sahte_eslesme": "Kamera yüz eşleştirmesi yanlış kişiyi işaret etti.",
-    "gecikmeli_kayit": "Kayıt saati gerçek olaydan 1 ila 3 saat sonra görünüyor."
+    "gecikmeli_kayit": "Kayıt saati gerçek olaydan 1 ila 3 saat sonra görünüyor.",
+    "saklama_suresi_doldu": "Kamera kaydı saklama süresi geçtiği için silinmiş. Eşleşme alanı 'silinmiş' döner, konum bilgisi vermez.",
+    "bulanik_goruntu": "Görüntü net değil. Eşleşme var ama kesin saat yerine yalnızca saat dilimi verilir, yön bilinmez."
   },
   "sert_kisit_tipleri": {
     "hucre": "Konumlayıcı. Şu anki konum, kayıttaki hücre veya komşularından birinin içindedir. Koşul: kayıt şu anki zamana yakın (telefon açık) ya da tüm kayıtların birleşimi.",
     "yaka": "Konumlayıcı. Şu anki konum, son geçişin yönüne göre Avrupa veya Anadolu yakasındadır. Yalnızca araçla seyahat eden hedefte geçerli.",
     "yaricap": "Konumlayıcı. Şu anki konum, son kaydın noktasına belirtilen metre içinde. Koşul: kayıt yakın zamanlı.",
-    "aday_yer": "Daraltıcı. Şu anki konum bu sensörün kayıtlarında geçen yerlerden biri olabilir. Tek başına konum kanıtı değildir; en az bir konumlayıcı ile birlikte kullanılır ve konumlayıcının bölgesi içinde daraltır."
+    "aday_yer": "Daraltıcı. Şu anki konum bu sensörün kayıtlarında geçen yerlerden biri olabilir. Tek başına konum kanıtı değildir; en az bir konumlayıcı ile birlikte kullanılır ve konumlayıcının bölgesi içinde daraltır.",
+    "dogrulayici": "Doğrulayıcı. Tek başına daraltmaz: oyuncu hangi noktayı soracağını bilmez. Aday kümesi başka kısıtlarla daraldıktan sonra kalan adaylara tek tek sorularak konum kesinleştirilir. Maliyeti kalan aday sayısına bağlıdır (en kötü durumda aday sayısı eksi bir sorgu). Yalnızca eşleşme yakın zamanlıysa şu anki konumu kanıtlar."
   },
   "sensorler": [
     {
@@ -409,6 +412,48 @@
       "kart_metni": "{kamera_kodu}, {gun}. gün {saat}: eşleşme {eslesme}, yön {yon}."
     },
     {
+      "id": "spor_turnike",
+      "ad": "Spor salonu turnike kaydı",
+      "kurum": "ÜYELİKNET",
+      "kademe": 2,
+      "maliyet": 60,
+      "ayak_izi": "nokta",
+      "varyant": "tek",
+      "es_varyant": null,
+      "kapsam": {
+        "tip": "pencere_gun",
+        "gun": 14
+      },
+      "olaylar": [
+        "konum"
+      ],
+      "roller": [
+        "ucuncu",
+        "rutin_disi"
+      ],
+      "yakalama_olasiligi": 1.0,
+      "kapsama": {
+        "alan": "kategori",
+        "oranlar": {
+          "spor_salonu": 1.0
+        },
+        "varsayilan": 0.0,
+        "aciklama": "Yalnızca spor salonu POI'lerinde turnike vardır."
+      },
+      "alanlar": [
+        "poi_id",
+        "gun",
+        "giris_saat",
+        "cikis_saat"
+      ],
+      "gurultu": [],
+      "sert_kisit": {
+        "tip": "aday_yer"
+      },
+      "parametreler": [],
+      "kart_metni": "{gun}. gün: giriş {giris_saat}, çıkış {cikis_saat}."
+    },
+    {
       "id": "baz_son",
       "ad": "Baz istasyonu, son kayıt",
       "kurum": "İLETİŞİMNET",
@@ -586,6 +631,77 @@
       "kart_metni": "Abonelik: {ilce} / {mahalle}. Son bağlantı {son_baglanti_gun}. gün {son_baglanti_saat}."
     },
     {
+      "id": "ozel_kamera_dar",
+      "ad": "Özel kamera talebi, son 24 saat",
+      "kurum": "SAHA EKİBİ",
+      "kademe": 3,
+      "maliyet": 120,
+      "ayak_izi": "nokta",
+      "varyant": "dar",
+      "es_varyant": "ozel_kamera_genis",
+      "kapsam": {
+        "tip": "pencere_gun",
+        "gun": 1
+      },
+      "olaylar": [
+        "konum",
+        "alisveris",
+        "eczane",
+        "atm_cekim",
+        "doviz",
+        "benzin",
+        "kargo_teslim"
+      ],
+      "yakalama_olasiligi": 1.0,
+      "kapsama": {
+        "alan": "kategori",
+        "oranlar": {
+          "market": 1.0,
+          "eczane": 1.0,
+          "spor_salonu": 1.0,
+          "cami": 1.0,
+          "benzinlik": 1.0,
+          "kahvehane": 0.6,
+          "doviz": 0.6,
+          "kargo": 0.6,
+          "atm": 0.6,
+          "otopark": 0.0
+        },
+        "varsayilan": 0.6,
+        "aciklama": "Zincir market, eczane, spor salonu, cami ve benzinlikte kamera her zaman vardır. Küçük dükkân ve kahvehanede yüzde 60. Otopark ve duraklar ŞEHİRGÖZ kapsamındadır, özel talep kabul edilmez."
+      },
+      "alanlar": [
+        "poi_id",
+        "eslesme",
+        "gun",
+        "saat",
+        "yon"
+      ],
+      "gurultu": [
+        {
+          "tip": "saklama_suresi_doldu",
+          "gun_en_az": 7,
+          "gun_en_cok": 30
+        },
+        {
+          "tip": "bulanik_goruntu",
+          "olasilik": 0.15
+        }
+      ],
+      "sert_kisit": {
+        "tip": "dogrulayici",
+        "yakinlik_saat": 6
+      },
+      "parametreler": [
+        {
+          "ad": "poi_id",
+          "tip": "poi",
+          "zorunlu": true
+        }
+      ],
+      "kart_metni": "{poi_id}, {gun}. gün {saat}: eşleşme {eslesme}, yön {yon}."
+    },
+    {
       "id": "baz_dokum",
       "ad": "14 günlük tam baz dökümü",
       "kurum": "İLETİŞİMNET",
@@ -711,6 +827,78 @@
       "birlesik": [
         "kamera_tekil"
       ]
+    },
+    {
+      "id": "ozel_kamera_genis",
+      "ad": "Özel kamera talebi, 14 gün",
+      "kurum": "SAHA EKİBİ",
+      "kademe": 4,
+      "maliyet": 200,
+      "ayak_izi": "nokta",
+      "varyant": "genis",
+      "es_varyant": "ozel_kamera_dar",
+      "kapsam": {
+        "tip": "pencere_gun",
+        "gun": 14
+      },
+      "olaylar": [
+        "konum",
+        "alisveris",
+        "eczane",
+        "atm_cekim",
+        "doviz",
+        "benzin",
+        "kargo_teslim"
+      ],
+      "yakalama_olasiligi": 1.0,
+      "kapsama": {
+        "alan": "kategori",
+        "oranlar": {
+          "market": 1.0,
+          "eczane": 1.0,
+          "spor_salonu": 1.0,
+          "cami": 1.0,
+          "benzinlik": 1.0,
+          "kahvehane": 0.6,
+          "doviz": 0.6,
+          "kargo": 0.6,
+          "atm": 0.6,
+          "otopark": 0.0
+        },
+        "varsayilan": 0.6,
+        "aciklama": "Zincir market, eczane, spor salonu, cami ve benzinlikte kamera her zaman vardır. Küçük dükkân ve kahvehanede yüzde 60. Otopark ve duraklar ŞEHİRGÖZ kapsamındadır, özel talep kabul edilmez."
+      },
+      "alanlar": [
+        "poi_id",
+        "eslesme",
+        "gun",
+        "saat",
+        "yon"
+      ],
+      "gurultu": [
+        {
+          "tip": "saklama_suresi_doldu",
+          "gun_en_az": 7,
+          "gun_en_cok": 30
+        },
+        {
+          "tip": "bulanik_goruntu",
+          "olasilik": 0.15
+        }
+      ],
+      "sert_kisit": {
+        "tip": "dogrulayici",
+        "yakinlik_saat": 6
+      },
+      "parametreler": [
+        {
+          "ad": "poi_id",
+          "tip": "poi",
+          "zorunlu": true
+        }
+      ],
+      "kart_metni": "{poi_id}, {gun}. gün {saat}: eşleşme {eslesme}, yön {yon}."
     }
-  ]
+  ],
+  "kapsama_aciklamasi": "Bazı sensörler yalnızca belirli POI kategorilerinde kayıt bırakır. kapsama alanı: hangi POI alanına bakılacağı, kategori başına oran ve varsayılan. Oran POI başına bir kez ve deterministik olarak çözülür; aynı POI dava boyunca ya kapsamdadır ya değildir."
 }

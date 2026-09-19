@@ -93,6 +93,11 @@ function parametreleriUygula(sensor: SensorTanimi, veri: Veri, kayitlar: Kayit[]
         out = out.filter((k) => k.alanlar.kamera_kodu === deger);
         break;
       }
+      case "poi": {
+        if (!veri.poiMap.has(String(deger))) throw new SorguHatasi("poi_yok", `Nokta bulunamadı: ${deger}`);
+        out = out.filter((k) => k.alanlar.poi_id === deger);
+        break;
+      }
       case "ilce": {
         if (!veri.ilceler.includes(String(deger))) throw new SorguHatasi("ilce_yok", `İlçe bulunamadı: ${deger}`);
         out = out.filter((k) => veri.kameraMap.get(String(k.alanlar.kamera_kodu))?.ilce === deger);
@@ -129,8 +134,12 @@ function bolgeCokgeni(veri: Veri, tip: "mahalle" | "ilce", ilce: string | null, 
 }
 
 const KATMAN_KURUCULAR: Record<SensorTanimi["ayak_izi"], KatmanKurucu> = {
-  nokta(sensor, veri, kayitlar) {
+  nokta(sensor, veri, kayitlar, p) {
     const out: KatmanOzelligi[] = [];
+    if (typeof p.poi_id === "string" && !kayitlar.length) {
+      const f = poiNoktasi(veri, p.poi_id, { sensor_id: sensor.id, eslesme: "yok" });
+      if (f) out.push(f);
+    }
     for (const k of kayitlar) {
       const props = { kayit_id: k.id, sensor_id: sensor.id, zaman: zamanMetni(k.zaman) };
       if (k.geometri?.tip === "poi") { const f = poiNoktasi(veri, k.geometri.id, props); if (f) out.push(f); }

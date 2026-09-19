@@ -26,6 +26,8 @@ export class OracleReddi extends Error {
 }
 
 const KONUMLAYICILAR = new Set(["hucre", "yaricap", "yaka"]);
+/** Doğrulayıcı adımın ekonomik olduğu en büyük aday sayısı. Üstünde arama yapılmaz. */
+const AZAMI_DOGRULAMA_ADAYI = 8;
 
 /** Bir sensörün kısıtı: aday POI kimlikleri kümesi; uygulanamıyorsa null. */
 export interface Kisit {
@@ -33,6 +35,20 @@ export interface Kisit {
   tip: string;
   konumlayici: boolean;
   adaylar: Set<string>;
+}
+
+/**
+ * Doğrulayıcı sensör: oyuncu hangi noktayı soracağını bilmez, bu yüzden tek başına daraltmaz.
+ * Aday kümesi daraldıktan sonra kalan adaylara tek tek sorulur; en kötü durumda aday sayısı
+ * eksi bir sorgu gerekir (son aday elemeyle bulunur).
+ */
+export interface Dogrulayici {
+  sensor_id: string;
+  maliyet: number;
+  /** Gerçek konumda yakın zamanlı bir eşleşme var mı; yoksa doğrulama sonuç vermez. */
+  gercekte_eslesme: boolean;
+  /** Eşleşme veren POI kimlikleri; bir adayda eşleşme yoksa o aday elenir. */
+  eslesen: Set<string>;
 }
 
 function sonKayit(kayitlar: Kayit[]): Kayit | null {
@@ -100,6 +116,7 @@ export function kisitHesapla(dava: Dava, veri: Veri, sensor: SensorTanimi, gerce
     if (!gercekKullan) return null;
     if (!sk.kosul.ulasim.includes(dava.gercek.ulasim)) return null;
   }
+  if (sk.tip === "dogrulayici") return null;
   let adaylar: Set<string> | null = null;
   switch (sk.tip) {
     case "hucre": {
@@ -138,6 +155,20 @@ export function kisitHesapla(dava: Dava, veri: Veri, sensor: SensorTanimi, gerce
     }
   }
   return adaylar ? { sensor_id: sensor.id, tip: sk.tip, konumlayici: KONUMLAYICILAR.has(sk.tip), adaylar } : null;
+}
+
+/** Doğrulayıcı sensörün durumunu hesaplar: hangi noktalarda yakın zamanlı eşleşme var. */
+export function dogrulayiciHesapla(dava: Dava, veri: Veri, sensor: SensorTanimi): Dogrulayici | null {
+  const sk = sensor.sert_kisit;
+  if (!sk || sk.tip !== "dogrulayici") return null;
+  const eslesen = new Set<string>();
+  for (const k of dava.kayitlar) {
+    if (k.sensor_id !== sensor.id || k.gurultu !== null) continue;
+    if (k.alanlar.eslesme !== "var") continue;
+    if (sk.yakinlik_saat !== undefined && !yakinMi(k, dava, sk.yakinlik_saat)) continue;
+    if (typeof k.alanlar.poi_id === "string") eslesen.add(k.alanlar.poi_id);
+  }
+  return { sensor_id: sensor.id, maliyet: sensor.maliyet, gercekte_eslesme: eslesen.has(dava.gercek.su_anki_konum.poi_id), eslesen };
 }
 
 /** Kısıt listesini uygular: konumlayıcılar kesişir, daraltıcılar birleşip kesişir. */
@@ -200,16 +231,31 @@ export function parHesapla(dava: Dava, veri: Veri, katalog: SensorKatalogu): Par
     if (adaylar.has(gercekId) && tekNoktaMi(veri, adaylar)) throw new OracleReddi("tek_sorgu", `${k.sensor_id} tek başına çözüyor`);
   }
 
-  let enIyi: { yol: Kisit[]; toplam: number } | null = null;
-  for (let boyut = 2; boyut <= Math.min(AZAMI_DERINLIK, kisitlar.length); boyut++) {
+  // Doğrulayıcı sensörler: kalan adaylara tek tek sorularak konum kesinleştirilir.
+  const dogrulayicilar = kullanilabilirSensorler(katalog, dava.zorluk)
+    .map((s) => dogrulayiciHesapla(dava, veri, s))
+    .filter((d): d is Dogrulayici => d !== null && d.gercekte_eslesme)
+    .sort((a, b) => a.maliyet - b.maliyet || a.sensor_id.localeCompare(b.sensor_id));
+
+  let enIyi: { yol: Kisit[]; toplam: number; dogrulama: { sensor: Dogrulayici; sorgu: number; kalan: number } | null } | null = null;
+  for (let boyut = 1; boyut <= Math.min(AZAMI_DERINLIK, kisitlar.length); boyut++) {
     for (const yol of birlesimler(kisitlar, boyut)) {
       if (!yol.some((k) => k.konumlayici)) continue;
-      const toplam = yol.reduce((s, k) => s + maliyet.get(k.sensor_id)!, 0);
-      if (enIyi && toplam >= enIyi.toplam) continue;
+      const temel = yol.reduce((s, k) => s + maliyet.get(k.sensor_id)!, 0);
+      if (enIyi && temel >= enIyi.toplam) continue;
       const adaylar = kisitlariUygula(veri, yol);
-      if (adaylar.has(gercekId) && tekNoktaMi(veri, adaylar)) enIyi = { yol, toplam };
+      if (!adaylar.has(gercekId)) continue;
+      if (boyut >= 2 && tekNoktaMi(veri, adaylar)) { enIyi = { yol, toplam: temel, dogrulama: null }; continue; }
+      // Doğrulayıcı ile kapatma: kalan adaylar arasında eşleşmeyenler elenir, en kötü durum sorgu sayısı.
+      if (adaylar.size > AZAMI_DOGRULAMA_ADAYI) continue;
+      for (const d of dogrulayicilar) {
+        // En kötü durum: her adaya tek tek sorulur, son adaya sormaya gerek kalmaz.
+        const sorgu = Math.max(1, adaylar.size - 1);
+        const toplam = temel + sorgu * d.maliyet;
+        if (enIyi && toplam >= enIyi.toplam) continue;
+        enIyi = { yol, toplam, dogrulama: { sensor: d, sorgu, kalan: adaylar.size } };
+      }
     }
-    // Daha küçük boyutta çözüm bulunduysa daha büyük boyut yalnızca daha ucuzsa kazanır; yine de taranır.
   }
   if (!enIyi) throw new OracleReddi("cozulemez", "sert kısıtlarla tek noktaya inmiyor");
 
@@ -220,6 +266,12 @@ export function parHesapla(dava: Dava, veri: Veri, katalog: SensorKatalogu): Par
   for (const k of sirali) {
     uygulanan.push(k);
     adimlar.push({ sensor_id: k.sensor_id, parametreler: null, maliyet: maliyet.get(k.sensor_id)!, kalan_aday: kisitlariUygula(veri, uygulanan).size });
+  }
+  if (enIyi.dogrulama) {
+    const { sensor, sorgu, kalan } = enIyi.dogrulama;
+    for (let i = 0; i < sorgu; i++) {
+      adimlar.push({ sensor_id: sensor.sensor_id, parametreler: { aday_sirasi: i + 1 }, maliyet: sensor.maliyet, kalan_aday: Math.max(1, kalan - i - 1) });
+    }
   }
   return { deger: enIyi.toplam, baslangic_aday: veri.poiler.length, yol: adimlar };
 }
