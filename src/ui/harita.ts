@@ -2,9 +2,10 @@
 // yeniden çizimde yalnızca kapsayıcı DOM'a geri takılır.
 
 import { Map as HaritaMotoru, AttributionControl, NavigationControl, setWorkerUrl, type MapMouseEvent } from "maplibre-gl";
-// MapLibre arka plan çalışanını kendi hesapladığı göreli adresten arar; derlemede bu dosya
-// paket dışında kaldığı için adres Vite'tan alınıp açıkça bildirilir.
-import calisanAdresi from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
+// MapLibre arka plan çalışanını kendi hesapladığı göreli adresten arar ve derlemede bu dosya
+// paket dışında kalır. "?worker&url" Vite'a çalışanı bağımlılıklarıyla birlikte derletir,
+// dönen adres de doğru base ile üretilir.
+import calisanAdresi from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import type { Konum, NoktaGorunumu, SonucGorunumu } from "../app/gorunum.ts";
 
 setWorkerUrl(calisanAdresi);
