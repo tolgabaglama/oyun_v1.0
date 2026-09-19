@@ -7,6 +7,7 @@ import { anaEkran } from "./ekran-ana.ts";
 import { sekmeCubugu, ustSeritCiz, type SekmeKimligi } from "./kabuk.ts";
 import { sekmeDosya } from "./sekme-dosya.ts";
 import { sekmeSorgu, sonucPenceresi } from "./sekme-sorgu.ts";
+import { sekmePano } from "./sekme-pano.ts";
 import { veriYukleWeb, katalogYukleWeb } from "../engine/data-web.ts";
 import { DavaBulunamadi, Oturum } from "../app/oturum.ts";
 import { ayarOku, ayarYaz, turOku, turSil, turYaz } from "../app/depo.ts";
@@ -114,6 +115,26 @@ function sekmeIcerigi(sekme: SekmeKimligi): HTMLElement {
       },
       onNoktaSec: (sensorId, mevcut) => {
         bekleyenSorgu = { sensorId, parametreler: mevcut };
+        uyg.sekme = "harita";
+        kaydet();
+        ciz();
+      },
+    });
+  }
+  if (sekme === "pano") {
+    const vurgulu = vurguluSorgu;
+    vurguluSorgu = null;
+    return sekmePano({
+      gecmis: o.gecmis(),
+      notlar: o.notlar,
+      vurgulu,
+      onNotDegisti: (metin) => {
+        // Yeniden çizim yapılmaz, yoksa yazarken imleç kaybolur.
+        o.notlar = metin;
+        kaydet();
+      },
+      onHaritayaGit: (sorguId) => {
+        vurguluSorgu = sorguId;
         uyg.sekme = "harita";
         kaydet();
         ciz();

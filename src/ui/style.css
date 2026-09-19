@@ -212,3 +212,24 @@ input[type="number"], input[type="text"], select, textarea {
 
 .kayit-listesi { margin: 6px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.6; }
 .kayit-listesi li { margin-bottom: 2px; }
+
+/* ---- PANO sekmesi ---- */
+
+.not-bolumu textarea { resize: vertical; min-height: 60px; font-size: 12px; line-height: 1.4; }
+.bos-metin.orta { text-align: center; padding: 30px 20px; }
+
+.pano-listesi { display: flex; flex-direction: column; gap: 8px; padding: 0 10px 10px; }
+.pano-blok { background: #fff; border: 1px solid #c0c0c0; }
+.pano-blok.vurgulu { border-color: #2f4f7a; box-shadow: 0 0 0 2px #b9c9dd; }
+.pano-baslik { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: #e6ecf3; border-bottom: 1px solid #c8d2dd; }
+.pano-ad { flex: 1; font-size: 12px; font-weight: bold; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pano-harita-dugme { font-size: 10px; padding: 2px 6px; }
+.pano-alt { padding: 4px 8px; font-size: 10px; color: #666; border-bottom: 1px solid #eee; }
+.pano-blok .bos-metin { padding: 8px; }
+
+.kayit-tablo { width: 100%; border-collapse: collapse; font-size: 12px; }
+.kayit-tablo td { padding: 4px 6px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+.kayit-tablo tr:last-child td { border-bottom: 0; }
+.kayit-zaman { white-space: nowrap; color: #555; width: 52px; font-variant-numeric: tabular-nums; }
+.kayit-saat { white-space: nowrap; color: #555; width: 42px; font-variant-numeric: tabular-nums; }
+.kayit-metin { line-height: 1.4; }
