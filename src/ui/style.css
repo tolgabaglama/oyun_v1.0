@@ -20,6 +20,7 @@ body { display: flex; align-items: center; justify-content: center; }
   width: 390px;
   height: 844px;
   max-height: 100vh;
+  max-height: 100dvh;
   background: #d9d9d9;
   border: 6px solid #222;
   border-radius: 24px;
@@ -28,6 +29,24 @@ body { display: flex; align-items: center; justify-content: center; }
 }
 
 #uygulama { height: 100%; }
+
+/* Telefonda çerçeve gereksizdir: uygulama ekranı tamamen kaplar.
+   Adres çubuğu yüzünden 100vh şaştığı için dvh kullanılır. */
+@media (max-width: 440px) {
+  body { background: #e9e9e9; }
+  #telefon {
+    width: 100%;
+    height: 100dvh;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+/* Dokunmatikte metin seçimi ve çift dokunuşla yakınlaştırma oyunu zorlaştırır. */
+button, .sekme-dugme, .harita-kap { touch-action: manipulation; }
+button { -webkit-user-select: none; user-select: none; }
 
 .ekran { height: 100%; display: flex; flex-direction: column; background: #e9e9e9; }
 
