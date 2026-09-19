@@ -210,6 +210,11 @@ export class Oturum {
     return this.sonuclar;
   }
 
+  /** Yapılmış tahminler; haritada işaretlenir. */
+  tahminler(): { konum: Konum; dogru: boolean }[] {
+    return this.durum.tahminler.map((t) => ({ konum: t.konum, dogru: t.dogru }));
+  }
+
   noktalar(): NoktaGorunumu[] {
     return this.veri.poiler.map((p) => ({
       id: p.id,

@@ -8,10 +8,12 @@ import { sekmeCubugu, ustSeritCiz, type SekmeKimligi } from "./kabuk.ts";
 import { sekmeDosya } from "./sekme-dosya.ts";
 import { sekmeSorgu, sonucPenceresi } from "./sekme-sorgu.ts";
 import { sekmePano } from "./sekme-pano.ts";
+import { sekmeHarita } from "./sekme-harita.ts";
+import { HaritaYoneticisi, type HaritaModu } from "./harita.ts";
 import { veriYukleWeb, katalogYukleWeb } from "../engine/data-web.ts";
 import { DavaBulunamadi, Oturum } from "../app/oturum.ts";
 import { ayarOku, ayarYaz, turOku, turSil, turYaz } from "../app/depo.ts";
-import { ZORLUK_ADLARI, type SonucGorunumu, type Zorluk } from "../app/gorunum.ts";
+import { ZORLUK_ADLARI, type Konum, type SonucGorunumu, type TahminGorunumu, type Zorluk } from "../app/gorunum.ts";
 import type { Veri } from "../engine/data.ts";
 import type { SensorKatalogu } from "../engine/schema.ts";
 
@@ -83,8 +85,35 @@ export function bekleyenSorguyuTamamla(poiId: string): void {
 
 export function bekleyenSorguyuIptal(): void {
   bekleyenSorgu = null;
+  harita?.modAyarla("gez");
   ciz();
 }
+
+/** Tek harita örneği; sekmeler arasında korunur. */
+let harita: HaritaYoneticisi | null = null;
+let haritaModu: HaritaModu = "gez";
+let acikTahmin: TahminGorunumu | null = null;
+let bekleyenRaptiye: Konum | null = null;
+
+function haritaKur(): HaritaYoneticisi {
+  if (harita) return harita;
+  harita = new HaritaYoneticisi({
+    onNoktaSecildi: (poiId) => bekleyenSorguyuTamamla(poiId),
+    onRaptiye: (konum) => { bekleyenRaptiye = konum; haritaModu = "gez"; ciz(); },
+    onDislama: (merkez, yaricap) => {
+      uyg.oturum!.dislamalar = [...uyg.oturum!.dislamalar, { id: `D${Date.now().toString(36)}`, merkez, yaricap_m: yaricap }];
+      haritaModu = "gez";
+      kaydet();
+      ciz();
+    },
+    onTahmin: (konum) => { tahminOnayi = konum; ciz(); },
+    onModDegisti: (mod) => { haritaModu = mod; },
+  });
+  return harita;
+}
+
+/** Onay bekleyen tahmin konumu. */
+let tahminOnayi: Konum | null = null;
 
 function sekmeIcerigi(sekme: SekmeKimligi): HTMLElement {
   const o = uyg.oturum!;
@@ -121,6 +150,56 @@ function sekmeIcerigi(sekme: SekmeKimligi): HTMLElement {
       },
     });
   }
+  if (sekme === "harita") {
+    const h = haritaKur();
+    h.noktalariEkle(o.noktalar());
+    h.katmanlariGuncelle(o.gecmis(), o.gizliKatmanlar);
+    h.cizimleriGuncelle({
+      raptiyeler: o.raptiyeler,
+      dislamalar: o.dislamalar,
+      tahminler: o.tahminler(),
+      gercekKonum: o.bitti() ? o.turSonu().gercek_konum : null,
+    });
+    if (bekleyenSorgu && haritaModu !== "nokta_secim") h.modAyarla("nokta_secim");
+    if (!bekleyenSorgu && haritaModu === "nokta_secim") h.modAyarla("gez");
+    const bekleyenAd = bekleyenSorgu ? o.sensorler().find((x) => x.id === bekleyenSorgu!.sensorId)?.ad ?? "Sorgu" : null;
+    const icerik = sekmeHarita({
+      harita: h,
+      gecmis: o.gecmis(),
+      gizli: o.gizliKatmanlar,
+      raptiyeler: o.raptiyeler,
+      dislamalar: o.dislamalar,
+      mod: haritaModu,
+      noktalarGorunur: h.noktalarGorunur(),
+      bekleyenSorguAdi: bekleyenAd,
+      turBitti: o.bitti(),
+      onKatmanDegis: (sorguId, gorunur) => {
+        if (gorunur) o.gizliKatmanlar.delete(sorguId);
+        else o.gizliKatmanlar.add(sorguId);
+        h.katmanlariGuncelle(o.gecmis(), o.gizliKatmanlar);
+        kaydet();
+      },
+      onNoktalarDegis: (gorunur) => h.noktalariGoster(gorunur),
+      onModDegis: (mod) => { h.modAyarla(mod); ciz(); },
+      onKatmanaGit: (sorguId) => {
+        const s = o.gecmis().find((x) => x.sorgu_id === sorguId);
+        if (s) h.katmanaGit(s);
+      },
+      onRaptiyeSil: (id) => { o.raptiyeler = o.raptiyeler.filter((r) => r.id !== id); kaydet(); ciz(); },
+      onDislamaSil: (id) => { o.dislamalar = o.dislamalar.filter((d) => d.id !== id); kaydet(); ciz(); },
+      onSecimIptal: bekleyenSorguyuIptal,
+    });
+    // Harita kapsayıcısı DOM'a takıldıktan sonra kurulur veya boyutlanır.
+    setTimeout(() => {
+      h.baslat();
+      if (vurguluSorgu) {
+        const s = o.gecmis().find((x) => x.sorgu_id === vurguluSorgu);
+        vurguluSorgu = null;
+        if (s) h.katmanaGit(s);
+      }
+    }, 0);
+    return icerik;
+  }
   if (sekme === "pano") {
     const vurgulu = vurguluSorgu;
     vurguluSorgu = null;
@@ -141,8 +220,71 @@ function sekmeIcerigi(sekme: SekmeKimligi): HTMLElement {
       },
     });
   }
-  return el("div", { sinif: "sekme-icerik yer-tutucu" },
-    el("p", {}, `${sekme.toUpperCase()} sekmesi bir sonraki adımda eklenecek.`),
+  return el("div", { sinif: "sekme-icerik yer-tutucu" }, el("p", {}, "Bilinmeyen sekme."));
+}
+
+/** Tahmin onayı penceresi: uzun basmadan sonra çıkar. */
+function tahminPenceresi(konum: Konum): HTMLElement {
+  const kapat = () => { tahminOnayi = null; ciz(); };
+  return el("div", { sinif: "pencere-perde", onclick: (e: Event) => { if (e.target === e.currentTarget) kapat(); } },
+    el("div", { sinif: "pencere" },
+      el("div", { sinif: "pencere-baslik" }, "TAHMİN"),
+      el("div", { sinif: "pencere-govde" },
+        el("p", {}, "Hedefin şu anda burada olduğunu bildiriyorsunuz."),
+        el("p", { sinif: "ipucu" }, `Konum: ${konum[1].toFixed(5)}, ${konum[0].toFixed(5)}`),
+        el("div", { sinif: "maliyet-kutu" },
+          el("span", {}, "150 metre içindeyse doğru sayılır. Yanlışsa 250 puan ceza, ikinci yanlışta tur kapanır."),
+        ),
+      ),
+      el("div", { sinif: "dugme-sira" },
+        el("button", { type: "button", onclick: kapat }, "Vazgeç"),
+        el("button", { type: "button", sinif: "birincil", onclick: () => {
+          tahminOnayi = null;
+          acikTahmin = uyg.oturum!.tahmin(konum);
+          kaydet();
+          ciz();
+        } }, "Tahmini gönder"),
+      ),
+    ),
+  );
+}
+
+/** Tahmin sonucu penceresi. */
+function tahminSonucPenceresi(t: TahminGorunumu): HTMLElement {
+  const kapat = () => { acikTahmin = null; ciz(); };
+  return el("div", { sinif: "pencere-perde" },
+    el("div", { sinif: "pencere" },
+      el("div", { sinif: "pencere-baslik" }, t.dogru ? "DOĞRU" : "YANLIŞ"),
+      el("div", { sinif: "pencere-govde" },
+        el("p", { sinif: t.dogru ? "sonuc-dogru" : "sonuc-yanlis" },
+          t.dogru ? `Hedef bulundu. Sapma ${t.mesafe_m} metre.` : `Hedef burada değil. En yakın olduğunuz mesafe ${t.mesafe_m} metre.`),
+        !t.dogru && el("p", {}, t.kalan_hak > 0 ? `250 puan ceza uygulandı. Bir tahmin hakkınız kaldı.` : "İkinci yanlış tahmin, tur kapandı."),
+      ),
+      el("div", { sinif: "dugme-sira" },
+        el("button", { type: "button", sinif: "birincil", onclick: kapat }, t.sonuc === "devam" ? "Devam et" : "Tur sonucunu gör"),
+      ),
+    ),
+  );
+}
+
+/** Raptiye notu penceresi. */
+function raptiyePenceresi(konum: Konum): HTMLElement {
+  const kutu = el("input", { type: "text", placeholder: "Kısa not (isteğe bağlı)" });
+  const kapat = () => { bekleyenRaptiye = null; ciz(); };
+  return el("div", { sinif: "pencere-perde", onclick: (e: Event) => { if (e.target === e.currentTarget) kapat(); } },
+    el("div", { sinif: "pencere" },
+      el("div", { sinif: "pencere-baslik" }, "RAPTİYE"),
+      el("div", { sinif: "pencere-govde" }, el("label", {}, "Not"), kutu),
+      el("div", { sinif: "dugme-sira" },
+        el("button", { type: "button", onclick: kapat }, "Vazgeç"),
+        el("button", { type: "button", sinif: "birincil", onclick: () => {
+          uyg.oturum!.raptiyeler = [...uyg.oturum!.raptiyeler, { id: `R${Date.now().toString(36)}`, konum, not: kutu.value.trim() }];
+          bekleyenRaptiye = null;
+          kaydet();
+          ciz();
+        } }, "Ekle"),
+      ),
+    ),
   );
 }
 
@@ -157,6 +299,9 @@ function turEkrani(): HTMLElement {
       ciz();
     }),
   );
+  if (tahminOnayi) ekran.append(tahminPenceresi(tahminOnayi));
+  if (acikTahmin) ekran.append(tahminSonucPenceresi(acikTahmin));
+  if (bekleyenRaptiye) ekran.append(raptiyePenceresi(bekleyenRaptiye));
   if (acikSonuc) {
     const sonuc = acikSonuc;
     ekran.append(sonucPenceresi(sonuc, () => { acikSonuc = null; ciz(); }, (sorguId) => {
