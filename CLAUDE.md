@@ -42,6 +42,8 @@ Amaç ikili: oyuncuya günlük hayatta ne kadar dijital iz bıraktığını fark
 * Her sorgu kendi maliyetini düşer (bkz. sensör kataloğu).
 * Yanlış tahmin 250 puan ceza. İkinci yanlış turu bitirir.
 * Par: oracle her dava için en verimli çözüm yolunun toplam maliyetini hesaplar. Bu davanın par değeridir ve tur sonunda gösterilir.
+* Par üst sınırı 800'dür. Bunun üstünde par gerektiren dosya oynanabilir olmaktan çıkar ve üretimde reddedilir.
+* Par 500'ün üstündeyse hedef az iz bırakmış demektir. Dosya "NİTELİKLİ HEDEF" olarak işaretlenir ve bu, oyuncuya dosya açılırken gösterilir.
 * Zorluk kademeleri: Kolay (aday sayısı görünür), Standart (görünmez), Uzman (Kademe 4 sensörler kapalı).
 * Günlük dava: herkes aynı seed ile aynı davayı oynar. Deterministik seed zorunludur.
 
@@ -150,7 +152,7 @@ Tutarlılık kuralı: üretilen dosyada hiçbir konumlayıcı sert kısıt gizli
 2. Motor: sensör kataloğu, hayat modeli, üretici, oracle, puanlama, birim testleri. Arayüz yok, konsoldan dava üret ve doğrula.
 3. Ham arayüz: dört sekme (Dosya, Sorgu, Pano, Yönlendir yerine Tahmin), katmanlı harita, tahmin, tur sonu ekranı. Görsel cila yok.
 4. Kalibrasyon: Tolga 50 tur oynar, maliyetler ve zorluk ayarlanır.
-5. Cila: kamu yazılımı estetiği, ses, günlük dava, seri, rütbe, farkındalık ekranı.
+5. Cila: kamu yazılımı estetiği, ses, günlük dava, seri, rütbe, farkındalık ekranı. Öğretici ekranı Aşama 3'te eklendi, metni docs/tutorial_metni.md dosyasından okur ve tek kaynak orasıdır.
 6. Tarayıcıda yayın (GitHub Pages veya Cloudflare Pages).
 7. Capacitor, AdMob (tur arası ve ödüllü reklam), gizlilik politikası, Play kapalı test (12 kullanıcı, 14 gün), üretim.
 

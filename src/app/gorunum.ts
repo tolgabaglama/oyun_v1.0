@@ -26,6 +26,8 @@ export interface DosyaGorunumu {
   /** "14. gün, saat 18:23" biçiminde şu anki zaman. */
   su_an_metni: string;
   su_an_gun: number;
+  /** Az iz bırakmış hedef: çözümü pahalı, dosyada baştan işaretlenir. */
+  nitelikli_hedef: boolean;
 }
 
 /** Sorgu sekmesindeki bir sensör satırı. */
@@ -135,6 +137,7 @@ export interface KaynakSatiri {
 
 export interface TurSonuGorunumu {
   sonuc: TurSonucu;
+  nitelikli_hedef: boolean;
   puan: number;
   par: number;
   par_metni: string;

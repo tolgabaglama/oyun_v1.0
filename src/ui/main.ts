@@ -5,6 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { el, temizle } from "./dom.ts";
 import { anaEkran } from "./ekran-ana.ts";
 import { ekranTurSonu } from "./ekran-tur-sonu.ts";
+import { ekranOgretici } from "./ekran-ogretici.ts";
 import { sekmeCubugu, ustSeritCiz, type SekmeKimligi } from "./kabuk.ts";
 import { sekmeDosya } from "./sekme-dosya.ts";
 import { sekmeSorgu } from "./sekme-sorgu.ts";
@@ -14,12 +15,12 @@ import { sekmeHarita } from "./sekme-harita.ts";
 import { HaritaYoneticisi, type HaritaModu } from "./harita.ts";
 import { veriYukleWeb, katalogYukleWeb } from "../engine/data-web.ts";
 import { DavaBulunamadi, Oturum } from "../app/oturum.ts";
-import { ayarOku, ayarYaz, gecmiseEkle, turOku, turSil, turYaz } from "../app/depo.ts";
+import { ayarOku, ayarYaz, gecmiseEkle, ogreticiGoruldu, ogreticiIsaretle, turOku, turSil, turYaz } from "../app/depo.ts";
 import { ZORLUK_ADLARI, type Konum, type SonucGorunumu, type TahminGorunumu, type Zorluk } from "../app/gorunum.ts";
 import type { Veri } from "../engine/data.ts";
 import type { SensorKatalogu } from "../engine/schema.ts";
 
-type Ekran = "ana" | "tur" | "tur_sonu";
+type Ekran = "ana" | "tur" | "tur_sonu" | "ogretici";
 
 interface Uygulama {
   veri: Veri;
@@ -359,6 +360,17 @@ function turEkrani(): HTMLElement {
 }
 
 function ciz(): void {
+  if (uyg.ekran === "ogretici") {
+    temizle(kok, ekranOgretici({
+      kapatmaEtiketi: "Anladım",
+      onKapat: () => {
+        ogreticiIsaretle();
+        uyg.ekran = "ana";
+        ciz();
+      },
+    }));
+    return;
+  }
   if (uyg.ekran === "tur_sonu" && uyg.oturum) {
     const o = uyg.oturum;
     temizle(kok, ekranTurSonu({
@@ -395,6 +407,7 @@ function ciz(): void {
   }
   temizle(kok, anaEkran({
     sonZorluk: (ayar.son_zorluk as Zorluk) ?? "standart",
+    onOgretici: () => { uyg.ekran = "ogretici"; ciz(); },
     devamEdenVar: Boolean(kayit),
     devamOzeti,
     onBaslat: turBaslat,
@@ -426,7 +439,8 @@ async function basla(): Promise<void> {
   ));
   try {
     const veri = await veriYukleWeb();
-    uyg = { veri, katalog: katalogYukleWeb(), ekran: "ana", oturum: null, sekme: "dosya" };
+    // Oyuna ilk kez girenler önce kuralları görür.
+    uyg = { veri, katalog: katalogYukleWeb(), ekran: ogreticiGoruldu() ? "ana" : "ogretici", oturum: null, sekme: "dosya" };
     ciz();
   } catch (e) {
     console.error(e);

@@ -27,6 +27,7 @@ export function ekranTurSonu(s: TurSonuSecenekleri): HTMLElement {
       el("div", { sinif: "sonuc-etiket" }, basarili ? "DOSYA ÇÖZÜLDÜ" : "DOSYA SONUÇSUZ KAPANDI"),
       el("h1", {}, basarili ? "HEDEF BULUNDU" : "HEDEF BULUNAMADI"),
       el("div", { sinif: "sonuc-alt" }, `${s.hedefAdi} · ${o.gercek_yer_metni}`),
+      o.nitelikli_hedef && el("div", { sinif: "sonuc-nitelikli" }, "NİTELİKLİ HEDEF · az iz bırakmış kişi"),
     ),
 
     el("div", { sinif: "seed-serit" },

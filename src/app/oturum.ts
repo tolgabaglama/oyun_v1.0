@@ -5,7 +5,7 @@
 import type { Dava, SensorKatalogu, SensorTanimi, Zorluk as MotorZorluk } from "../engine/schema.ts";
 import type { Veri } from "../engine/data.ts";
 import { davaUret, UretimReddi, URETICI_SURUMU } from "../engine/generator.ts";
-import { parHesapla, OracleReddi } from "../engine/oracle.ts";
+import { parHesapla, NITELIKLI_HEDEF_ESIGI, OracleReddi } from "../engine/oracle.ts";
 import { kullanilabilirSensorler, sensorBul, SorguHatasi, type SorguParametreleri } from "../engine/query.ts";
 import { adaySayisi, sorguYap, tahminYap, turBaslat, turOzeti, TAVAN_PUAN, YANLIS_CEZASI, type TurDurumu } from "../engine/scoring.ts";
 import {
@@ -169,6 +169,7 @@ export class Oturum {
       zorluk_adi: ZORLUK_ADLARI[this.dava.zorluk as Zorluk],
       su_an_metni: `${z.gun}. gün, saat ${String(z.saat).padStart(2, "0")}:${String(z.dakika).padStart(2, "0")}`,
       su_an_gun: z.gun,
+      nitelikli_hedef: this.dava.par.deger > NITELIKLI_HEDEF_ESIGI,
     };
   }
 
@@ -436,6 +437,7 @@ export class Oturum {
     const fark = o.puan - (TAVAN_PUAN - o.par);
     return {
       sonuc: o.sonuc,
+      nitelikli_hedef: this.dava.par.deger > NITELIKLI_HEDEF_ESIGI,
       puan: o.puan,
       par: o.par,
       par_metni: fark === 0 ? "Par ile aynı" : fark > 0 ? `Par'ın ${fark} puan üstünde` : `Par'ın ${-fark} puan altında`,

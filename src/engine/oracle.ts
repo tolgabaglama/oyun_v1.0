@@ -16,6 +16,13 @@ import { kullanilabilirSensorler } from "./query.ts";
 
 export const DOGRU_YARICAP_M = 150;
 const AZAMI_DERINLIK = 4;
+/**
+ * Par üst sınırı. Bunun üstündeki dosyada oyuncuya kalan puan çok azdır, dosya oynanabilir
+ * olmaktan çıkar; üretimde reddedilir.
+ */
+export const AZAMI_PAR = 800;
+/** Bu değerin üstünde par gerektiren hedef az iz bırakmıştır, dosyada işaretlenir. */
+export const NITELIKLI_HEDEF_ESIGI = 500;
 
 export class OracleReddi extends Error {
   neden: string;
@@ -307,6 +314,7 @@ export function parHesapla(dava: Dava, veri: Veri, katalog: SensorKatalogu): Par
     }
   }
   if (!enIyi) throw new OracleReddi("cozulemez", "sert kısıtlarla tek noktaya inmiyor");
+  if (enIyi.toplam > AZAMI_PAR) throw new OracleReddi("par_cok_yuksek", `par ${enIyi.toplam}, üst sınır ${AZAMI_PAR}`);
 
   // Yol sırası: konumlayıcılar önce (ucuzdan pahalıya), sonra daraltıcılar.
   const sirali = [...enIyi.yol].sort((a, b) => Number(b.konumlayici) - Number(a.konumlayici) || maliyet.get(a.sensor_id)! - maliyet.get(b.sensor_id)! || a.sensor_id.localeCompare(b.sensor_id));

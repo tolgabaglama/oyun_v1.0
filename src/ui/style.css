@@ -380,3 +380,39 @@ input[type="number"], input[type="text"], select, textarea {
 }
 .balon-baslik { font-size: 12px; font-weight: bold; color: #2f4f7a; margin-bottom: 4px; }
 .balon-satir { color: #333; line-height: 1.5; }
+
+/* ---- Nitelikli hedef ---- */
+
+.nitelikli-rozet {
+  margin: 6px 0 10px; padding: 6px 8px;
+  background: #f6ecd8; border: 1px solid #b08a3c; border-left-width: 4px;
+}
+.nitelikli-rozet strong { display: block; font-size: 11px; letter-spacing: 1px; color: #7a5a14; }
+.nitelikli-rozet span { display: block; font-size: 11px; color: #5a4a2a; margin-top: 2px; }
+.sonuc-nitelikli {
+  display: inline-block; margin-top: 6px; padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.5);
+  font-size: 10px; letter-spacing: 0.5px;
+}
+
+/* ---- Öğretici ekranı ---- */
+
+.ogretici-ekrani { background: #e9e9e9; }
+.ogretici-ust { flex: 0 0 auto; background: #2f4f7a; color: #fff; padding: 12px 14px 10px; border-bottom: 3px solid #1f3552; }
+.ogretici-kurum { font-size: 9px; letter-spacing: 2px; opacity: 0.8; }
+.ogretici-baslik { font-size: 17px; letter-spacing: 0.5px; margin: 4px 0 2px; }
+.ogretici-sayac { font-size: 10px; opacity: 0.85; font-variant-numeric: tabular-nums; }
+
+.ogretici-icerik { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 12px 14px; }
+.ogretici-govde p { font-size: 13px; line-height: 1.6; margin: 0 0 10px; }
+.ogretici-govde ul { margin: 0 0 10px; padding-left: 20px; }
+.ogretici-govde li { font-size: 13px; line-height: 1.6; margin-bottom: 4px; }
+.ogretici-govde strong { color: #2f4f7a; }
+
+.ogretici-tablo { width: 100%; border-collapse: collapse; font-size: 11px; margin: 0 0 12px; background: #fff; border: 1px solid #c0c0c0; }
+.ogretici-tablo th { text-align: left; background: #e6ecf3; color: #2f4f7a; padding: 4px 6px; border-bottom: 1px solid #c8d2dd; font-size: 10px; letter-spacing: 0.5px; }
+.ogretici-tablo td { padding: 4px 6px; border-bottom: 1px solid #eee; vertical-align: top; line-height: 1.4; }
+.ogretici-tablo tr:last-child td { border-bottom: 0; }
+
+.ogretici-alt { flex: 0 0 auto; display: flex; gap: 8px; padding: 10px; background: #dcdcdc; border-top: 2px solid #b0b0b0; }
+.ogretici-alt button { flex: 1; }

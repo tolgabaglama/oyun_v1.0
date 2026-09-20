@@ -7,6 +7,7 @@ import type { KayitliOturum } from "./oturum.ts";
 const ANAHTAR_TUR = "iz.tur";
 const ANAHTAR_AYAR = "iz.ayar";
 const ANAHTAR_GECMIS = "iz.gecmis";
+const ANAHTAR_OGRETICI = "iz.ogretici";
 /** Yerelde tutulan en fazla tur kaydı sayısı. */
 const GECMIS_SINIRI = 100;
 
@@ -57,6 +58,15 @@ export function gecmisOku(): TurKaydi[] {
 
 export function gecmiseEkle(kayit: TurKaydi): void {
   guvenliYaz(ANAHTAR_GECMIS, [kayit, ...gecmisOku()].slice(0, GECMIS_SINIRI));
+}
+
+/** Öğretici ilk açılışta bir kez gösterilir; sonra menüden açılabilir. */
+export function ogreticiGoruldu(): boolean {
+  return guvenliOku<boolean>(ANAHTAR_OGRETICI) === true;
+}
+
+export function ogreticiIsaretle(): void {
+  guvenliYaz(ANAHTAR_OGRETICI, true);
 }
 
 export function ayarOku(): Ayarlar {

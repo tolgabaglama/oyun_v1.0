@@ -5,6 +5,7 @@ import { ZORLUK_ADLARI, type Zorluk } from "../app/gorunum.ts";
 
 export interface AnaEkranSecenekleri {
   sonZorluk: Zorluk;
+  onOgretici: () => void;
   devamEdenVar: boolean;
   devamOzeti: string;
   onBaslat: (seed: number, zorluk: Zorluk) => void;
@@ -72,6 +73,9 @@ export function anaEkran(s: AnaEkranSecenekleri): HTMLElement {
           onclick: () => s.onBaslat(Math.max(1, Number(seedKutusu.value) || rastgeleSeed()), zorluk),
         }, "Bu numarayla aç"),
       ),
+    ),
+    el("section", { sinif: "bolum" },
+      el("button", { type: "button", sinif: "genis", onclick: s.onOgretici }, "Nasıl oynanır"),
     ),
     el("footer", { sinif: "ana-alt" }, "Tüm kişiler, kurumlar ve kayıtlar kurgusaldır."),
   );

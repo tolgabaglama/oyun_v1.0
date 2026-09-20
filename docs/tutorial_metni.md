@@ -9,7 +9,7 @@ Bir devlet biriminde sorgu memurusunuz. Elinizde bir dosya var: bir kişinin ad�
 hakkında yazılmış kısa bir not. Bu kişiye ulaşılmak isteniyor. Sizden istenen tek şey şu:
 bu kişi şu anda nerede?
 
-Kişi hakkında bir suçlama yok. Neden arandığı size söylenmiyor, sizi de ilgilendirmiyor.
+Kişi hakkında bir isnat yok. Neden arandığı size söylenmiyor, sizi de ilgilendirmiyor.
 Göreviniz konumu bulmak.
 
 Kişi hareket etmiyor. Bulunduğu yerde duruyor ve siz arayana kadar orada kalacak. Yani
