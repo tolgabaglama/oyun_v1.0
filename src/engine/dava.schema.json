@@ -96,7 +96,8 @@
           "enum": [
             "arac",
             "toplu_tasima",
-            "karisik"
+            "karisik",
+            "taksi"
           ]
         },
         "odeme": {
@@ -381,7 +382,8 @@
                   "enum": [
                     "arac",
                     "toplu_tasima",
-                    "karisik"
+                    "karisik",
+                    "taksi"
                   ]
                 },
                 "duraklar": {

@@ -11,7 +11,8 @@ import { adaySayisi, sorguYap, tahminYap, turBaslat, turOzeti, TAVAN_PUAN, YANLI
 import {
   KAMERA_TUR_ADLARI, KATEGORI_ADLARI, ZORLUK_ADLARI,
   type DislamaDairesi, type DosyaGorunumu, type Konum, type NoktaGorunumu, type ParametreGorunumu,
-  type KameraGorunumu, type Raptiye, type SensorGorunumu, type SonucGorunumu, type TahminGorunumu, type TurSonuGorunumu,
+  type KameraGorunumu, type Raptiye, type SensorGorunumu, type SonucGorunumu, type TahminGorunumu,
+  type TurKaydi, type TurSonuGorunumu,
   type UstSerit, type Zorluk,
 } from "./gorunum.ts";
 
@@ -22,6 +23,8 @@ export interface KayitliOturum {
   seed: number;
   zorluk: Zorluk;
   sorgular: { sensor_id: string; parametreler: SorguParametreleri }[];
+  /** Turun açılış anı; süre hesabı yarım kalan turda da doğru kalsın diye saklanır. */
+  baslangic_ms: number;
   tahminler: Konum[];
   notlar: string;
   raptiyeler: Raptiye[];
@@ -73,6 +76,7 @@ export class Oturum {
   dislamalar: DislamaDairesi[] = [];
   gizliKatmanlar = new Set<string>();
   aktifSekme = "dosya";
+  private baslangicMs = Date.now();
 
   private dava: Dava;
   private veri: Veri;
@@ -100,12 +104,12 @@ export class Oturum {
         throw e;
       }
     }
-    throw new DavaBulunamadi("Bu seed civarında çözülebilir dava üretilemedi.");
+    throw new DavaBulunamadi("Bu numara civarında çözülebilir dosya üretilemedi.");
   }
 
   /** Kayıttan geri yükler: davayı yeniden üretir, sorguları ve tahminleri tekrar oynar. */
   static yukle(kayit: KayitliOturum, veri: Veri, katalog: SensorKatalogu): Oturum {
-    if (kayit.uretici_surumu !== URETICI_SURUMU) throw new DavaBulunamadi("Kayıt eski bir üretici sürümüne ait.");
+    if (kayit.uretici_surumu !== URETICI_SURUMU) throw new DavaBulunamadi("Kayıt eski bir sürüme ait, dosya açılamıyor.");
     const dava = davaUret(kayit.seed, kayit.zorluk as MotorZorluk, veri, katalog);
     dava.par = parHesapla(dava, veri, katalog);
     const o = new Oturum(dava, veri, katalog);
@@ -118,6 +122,7 @@ export class Oturum {
     o.dislamalar = kayit.dislamalar;
     o.gizliKatmanlar = new Set(kayit.gizli_katmanlar);
     o.aktifSekme = kayit.aktif_sekme;
+    if (kayit.baslangic_ms) o.baslangicMs = kayit.baslangic_ms;
     return o;
   }
 
@@ -128,6 +133,7 @@ export class Oturum {
       seed: this.dava.seed,
       zorluk: this.dava.zorluk as Zorluk,
       sorgular: this.durum.sorgular.map((s) => ({ sensor_id: s.sensor_id, parametreler: s.parametreler })),
+      baslangic_ms: this.baslangicMs,
       tahminler: this.durum.tahminler.map((t) => t.konum),
       notlar: this.notlar,
       raptiyeler: this.raptiyeler,
@@ -235,15 +241,6 @@ export class Oturum {
   }
 
   noktalar(): NoktaGorunumu[] {
-    // Kamera kapsaması sensör tanımındaki kategori oranından okunur; hedefe bağlı değildir.
-    const kapsama = this.katalog.sensorler.find((s) => s.id === "ozel_kamera_dar")?.kapsama;
-    const durum = (kategori: string): string => {
-      if (!kapsama) return "bilinmiyor";
-      const oran = kapsama.oranlar[kategori] ?? kapsama.varsayilan;
-      if (oran >= 1) return "Kamera her zaman var";
-      if (oran <= 0) return "Özel kamera talebi kabul edilmez";
-      return "Kamera bulunma ihtimali orta";
-    };
     return this.veri.poiler.map((p) => ({
       id: p.id,
       kategori: p.kategori,
@@ -251,7 +248,7 @@ export class Oturum {
       ilce: p.ilce,
       mahalle: p.mahalle,
       konum: p.konum,
-      kamera_durumu: durum(p.kategori),
+      kamera_durumu: this.kameraDurumu(p.kategori),
     }));
   }
 
@@ -265,6 +262,72 @@ export class Oturum {
       yon: k.yon,
       konum: k.konum,
     }));
+  }
+
+  /**
+   * Haritada tıklanan ögenin künyesi. Tip ve kimlik katman özelliklerinden gelir;
+   * hangi sorgudan geldiği katman kimliğinden çözülür.
+   */
+  kunye(ozellikler: Record<string, unknown>, katmanId: string): { baslik: string; satirlar: string[] } | null {
+    const tip = String(ozellikler.kunye_tip ?? (ozellikler.poi_id ? "poi" : ozellikler.kamera_kodu ? "kamera" : ""));
+    const id = String(ozellikler.kunye_id ?? ozellikler.poi_id ?? ozellikler.kamera_kodu ?? "");
+    const satirlar: string[] = [];
+    let baslik = "";
+
+    if (tip === "poi") {
+      const p = this.veri.poiMap.get(id);
+      if (!p) return null;
+      const kategoriAdi = KATEGORI_ADLARI[p.kategori] ?? p.kategori;
+      baslik = p.ad ?? kategoriAdi;
+      if (p.ad) satirlar.push(kategoriAdi);
+      satirlar.push(p.mahalle ? `${p.ilce} / ${p.mahalle}` : p.ilce);
+      satirlar.push(this.kameraDurumu(p.kategori));
+    } else if (tip === "kamera") {
+      const k = this.veri.kameraMap.get(id);
+      if (!k) return null;
+      baslik = k.kod;
+      satirlar.push(KAMERA_TUR_ADLARI[k.tur] ?? k.tur, k.yol_adi ?? "Yol adı yok", k.ilce, `Bakış yönü ${k.yon} derece`);
+    } else if (tip === "durak" || tip === "istasyon") {
+      const d = this.veri.durakMap.get(id);
+      if (!d) return null;
+      baslik = d.ad;
+      satirlar.push(d.tip === "istasyon" ? `Raylı sistem istasyonu${d.hat_turu ? ` · ${d.hat_turu}` : ""}` : "Otobüs durağı", d.ilce);
+    } else if (tip === "hucre") {
+      const h = this.veri.hucreMap.get(id);
+      if (!h) return null;
+      baslik = `Baz hücresi ${h.kod}`;
+      satirlar.push(`${h.ilce} çevresi`, `Alan ${h.alan_km2} km²`);
+    } else if (tip === "gecis") {
+      const g = this.veri.gecisMap.get(id);
+      if (!g) return null;
+      baslik = g.ad;
+      satirlar.push("Geçiş noktası");
+    } else if (tip === "mahalle" || tip === "ilce") {
+      baslik = String(ozellikler.ad ?? id);
+      satirlar.push(tip === "mahalle" ? "Mahalle sınırı" : "İlçe sınırı");
+      if (ozellikler.ilce && ozellikler.ilce !== baslik) satirlar.push(String(ozellikler.ilce));
+    } else {
+      return null;
+    }
+
+    // Hangi sorgudan geldiği: katman kimliği "q-Q01-nokta" biçimindedir.
+    const eslesme = /^q-(Q\d+)-/.exec(katmanId);
+    if (eslesme) {
+      const sonuc = this.sonuclar.find((x) => x.sorgu_id === eslesme[1]);
+      if (sonuc) satirlar.push(`${sonuc.sorgu_id} · ${sonuc.sensor_adi}`);
+    } else if (katmanId === "tum-noktalar" || katmanId === "tum-kameralar") {
+      satirlar.push("Sorgu sonucu değil, genel katman");
+    }
+    return { baslik, satirlar };
+  }
+
+  private kameraDurumu(kategori: string): string {
+    const kapsama = this.katalog.sensorler.find((s) => s.id === "ozel_kamera_dar")?.kapsama;
+    if (!kapsama) return "";
+    const oran = kapsama.oranlar[kategori] ?? kapsama.varsayilan;
+    if (oran >= 1) return "Kamera her zaman var";
+    if (oran <= 0) return "Özel kamera talebi kabul edilmez";
+    return "Kamera bulunma ihtimali orta";
   }
 
   /** Seçilen bir noktanın veya kameranın onay ekranında gösterilecek adı. */
@@ -343,6 +406,27 @@ export class Oturum {
 
   bitti(): boolean {
     return this.durum.sonuc !== "devam";
+  }
+
+  /** Biten turun düz kaydı. Sunucuya gönderilmeye uygun, kişisel bilgi içermez. */
+  turKaydi(): TurKaydi {
+    const o = turOzeti(this.durum, this.katalog);
+    return {
+      surum: 1,
+      seed: this.dava.seed,
+      zorluk: this.dava.zorluk as Zorluk,
+      sonuc: o.sonuc,
+      puan: o.puan,
+      par: o.par,
+      sorgu_sayisi: o.sorgu_sayisi,
+      kullanilan_sensorler: [...new Set(this.durum.sorgular.map((s) => s.sensor_id))],
+      yanlis_tahmin: o.yanlis_tahmin,
+      toplam_kayit: o.toplam_kayit,
+      kullanilan_kayit: o.kullanilan_kayit,
+      sure_sn: Math.round((Date.now() - this.baslangicMs) / 1000),
+      tarih: new Date().toISOString(),
+      uretici_surumu: URETICI_SURUMU,
+    };
   }
 
   turSonu(): TurSonuGorunumu {

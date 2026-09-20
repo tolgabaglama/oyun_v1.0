@@ -152,6 +152,12 @@ export function kisitHesapla(dava: Dava, veri: Veri, sensor: SensorTanimi, gerce
     case "aday_yer": {
       adaylar = new Set<string>();
       for (const k of kayitlar) {
+        // Bir kayıt birden çok yere işaret edebilir (taksi yolculuğunun iki ucu gibi).
+        let eklendi = false;
+        for (const alan of ["uc_poi_1", "uc_poi_2"]) {
+          if (typeof k.alanlar[alan] === "string") { adaylar.add(k.alanlar[alan] as string); eklendi = true; }
+        }
+        if (eklendi) continue;
         if (k.geometri?.tip === "poi") adaylar.add(k.geometri.id);
         else if (typeof k.alanlar.poi_id === "string") adaylar.add(k.alanlar.poi_id);
         else if (typeof k.alanlar.adres_poi === "string") adaylar.add(k.alanlar.adres_poi);

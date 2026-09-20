@@ -93,9 +93,12 @@ function hayatModeliKur(veri: Veri, rng: Rng): HayatModeli {
     ?? kategoridenSec(veri, rng, UCUNCU_KATEGORILERI, ucuncuKosul(6000));
   if (!ucuncuPoi) throw new UretimReddi("ucuncu_bulunamadi");
 
-  const ulasim = rng.agirlikli<UlasimModu>([["arac", 0.4], ["toplu_tasima", 0.4], ["karisik", 0.2]]);
-  const arac_var = ulasim !== "toplu_tasima" || rng.sans(0.3);
-  const odeme = rng.agirlikli<OdemeDisiplini>([["hep_kart", 0.45], ["hep_nakit", 0.3], ["doviz_sonrasi_nakit", 0.25]]);
+  const ulasim = rng.agirlikli<UlasimModu>([["arac", 0.35], ["toplu_tasima", 0.32], ["karisik", 0.18], ["taksi", 0.15]]);
+  // Taksi kullanan hedefin aracı yoktur; İstanbulkart da bırakmaz, izi yalnızca ödemesidir.
+  const arac_var = ulasim === "arac" || ulasim === "karisik" || (ulasim === "toplu_tasima" && rng.sans(0.3));
+  const odeme = ulasim === "taksi"
+    ? rng.agirlikli<OdemeDisiplini>([["hep_kart", 0.7], ["doviz_sonrasi_nakit", 0.2], ["hep_nakit", 0.1]])
+    : rng.agirlikli<OdemeDisiplini>([["hep_kart", 0.45], ["hep_nakit", 0.3], ["doviz_sonrasi_nakit", 0.25]]);
   const telefon = rng.agirlikli<TelefonDisiplini>([["hep_acik", 0.5], ["geceleri_kapali", 0.3], ["son_3_gun_kapali", 0.2]]);
   return {
     ev: yerYap(veri, evPoi, "ev"), is: yerYap(veri, isPoi, "is"), ucuncu: yerYap(veri, ucuncuPoi, "ucuncu"),
@@ -141,12 +144,26 @@ function tripModu(b: Baglam): UlasimModu {
   return b.model.ulasim;
 }
 
+/** Taksi yolculuğunun iki ucu; hangisinin varış olduğu kayda yazılmaz. */
+function taksiOlayi(b: Baglam, nereden: Yer, nereye: Yer, z: Zaman, sure: number): void {
+  const uclar = b.rng.sans(0.5) ? [nereden.poi_id, nereye.poi_id] : [nereye.poi_id, nereden.poi_id];
+  olayEkle(b, "taksi", z, {
+    yer_poi_id: nereye.poi_id, rol: nereye.rol, bitis: ekle(z, sure),
+    odeme: odemeSekli(b.model, z),
+    yolculuk: { nereden_poi_id: uclar[0], nereye_poi_id: uclar[1], mod: "taksi", duraklar: [], gecisler: [] },
+  });
+}
+
 /** İki yer arası yolculuk; süre dakika döner. 1,2 km altı yürünür, olay üretilmez. */
 function yolculuk(b: Baglam, nereden: Yer, nereye: Yer, z: Zaman): number {
   const m = mesafeM(nereden.konum, nereye.konum);
   if (m < 1200) return Math.round(m / 80) + 2;
   const mod = tripModu(b);
   const sure = Math.min(120, Math.round(mod === "arac" ? m / 1000 / 25 * 60 + 10 : m / 1000 / 18 * 60 + 15));
+  if (mod === "taksi") {
+    taksiOlayi(b, nereden, nereye, z, sure);
+    return sure;
+  }
   const y: Yolculuk = { nereden_poi_id: nereden.poi_id, nereye_poi_id: nereye.poi_id, mod, duraklar: [], gecisler: [] };
   if (mod === "toplu_tasima") {
     const d1 = enYakin(b.veri.duraklar, nereden.konum, 1500);
@@ -401,9 +418,12 @@ function alanDoldur(k: KayitBaglami, sensor: SensorTanimi, olay: Olay, poi: Poi 
       // Araç yoksa tescil ilçesi de yoktur; dolu bırakmak ev ilçesini sızdırırdı.
       case "ilce_tescil": out[alan] = k.model.arac_var ? poi?.ilce ?? null : null; break;
       case "teslim_yeri": out[alan] = olay.rol === "is" ? "iş yeri" : "ev"; break;
-      case "tutar_araligi": out[alan] = k.rng.sec(TUTARLAR); break;
+      case "tutar_araligi": out[alan] = k.rng.sec(sensor.tutar_araliklari ?? TUTARLAR); break;
       case "sure_dk": out[alan] = olay.bitis ? zamanDakika(olay.bitis) - zamanDakika(olay.zaman) : k.rng.tam(30, 240); break;
       case "kaynak_sensor": out[alan] = sensor.id; break;
+      // Taksi yolculuğunun uçları; sıra üretimde karıştırılmıştır.
+      case "uc_poi_1": out[alan] = olay.yolculuk?.nereden_poi_id ?? null; break;
+      case "uc_poi_2": out[alan] = olay.yolculuk?.nereye_poi_id ?? null; break;
       default: out[alan] = null;
     }
   }
@@ -474,6 +494,11 @@ const ISLEYICILER: Record<string, Isleyici> = {
         const z = ekle(olay.zaman, i === 0 ? 5 : Math.max(10, Math.round((zamanDakika(olay.bitis!) - zamanDakika(olay.zaman)) * 0.5)));
         out.push(yeniKayit(k, sensor, olay, z, alanDoldur(k, sensor, olay, null, z, { durak_id: d.id, durak_adi: d.ad }), { tip: d.tip, id: d.id }));
       });
+    }
+    if (sensor.alanlar.includes("uc_poi_1")) {
+      // İki uç tek kayıtta durur; harita bunları bir çizgiyle birleştirir.
+      const z = olay.bitis ?? olay.zaman;
+      out.push(yeniKayit(k, sensor, olay, olay.zaman, alanDoldur(k, sensor, olay, null, z, {}), { tip: "poi", id: y.nereden_poi_id }));
     }
     if (sensor.alanlar.includes("gecis_id")) {
       for (const g of y.gecisler) {

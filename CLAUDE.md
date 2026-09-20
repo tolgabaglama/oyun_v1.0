@@ -69,6 +69,7 @@ Kademe 3, mahrem veri, maliyet 120
 * ATM çekimleri: son 14 gün, nokta ve saat.
 * POS harcamaları: iş yeri kategorisi ve nokta, son 14 gün.
 * Döviz bürosu işlemi: nokta, tutar aralığı, tarih.
+* Taksi ödemesi: kartla ödenen taksi yolculuğu. Ayak izi güzergâh. Kayıt yolculuğun iki ucunu taşır, hangisinin varış olduğu yazmaz. Oracle için daraltıcıdır, konumlayıcı değildir.
 * Ev interneti IP: abonelik adresi, son bağlantı saati.
 * Özel kamera talebi, son 24 saat: seçilen bir noktanın kendi kamerasından saha ekibi kayıt ister. Ayak izi nokta. Sonuç: eşleşme var veya yok, saat, giriş veya çıkış yönü.
 
@@ -92,7 +93,8 @@ Aynı sensörün dar sorgusu ucuz, geniş sorgusu pahalıdır (örnek: "son kay�
 
 Üretici her tur şunları seçer ve tutarlı bir 14 günlük geçmiş üretir:
 * Ev, iş, üçüncü nokta (akraba evi, spor salonu, kahvehane, cami). Hepsi gerçek POI noktalarından.
-* Ulaşım modu: araç, toplu taşıma, karışık. HGS, İstanbulkart, İSPARK kayıtlarını belirler.
+* Ulaşım modu: araç, toplu taşıma, karışık, taksi. HGS, İstanbulkart, İSPARK kayıtlarını belirler.
+* Taksi kullanan hedefin aracı yoktur ve İstanbulkart kullanmaz: HGS, İSPARK ve biniş kaydı bırakmaz. Tek ulaşım izi taksi ödemesidir, o da kartla ödendiğinde oluşur. Bu yüzden taksi modunda ödeme disiplini ağırlıklı olarak karttır, aksi halde hedefin hiç ulaşım izi kalmazdı.
 * Ödeme disiplini: hep kart, hep nakit, döviz sonrası nakde geçiş.
 * Spor salonu üyeliği: hedeflerin yaklaşık üçte biri üyedir. Üye olanın üçüncü noktası spor salonu olur ve turnike kaydı bırakır.
 * İş çevresi: hafta içi öğle aralarında iş noktasının yaklaşık 300 metre yakınındaki bir yere gidilir (market, kahvehane, eczane, kargo şubesi, döviz bürosu). Ödeme disiplinine uyar: kart disiplininde POS kaydı, nakit disiplininde önce çevredeki ATM'den çekim sonra nakit ödeme. Nakit ödeme banka kaydı bırakmaz ama özel kamera kapsamına girer. Bu davranış iş yerinin kendisini değil çevresini işaretler; oyuncu ve oracle "bu civarda çalışıyor" çıkarımını yapıp çevredeki noktalara doğrulama sorgusu gönderir.
@@ -154,6 +156,7 @@ Her aşama bitmeden bir sonrakine geçilmez. Her aşama sonunda Tolga'nın taray
 ## 11. Stil ve iletişim kuralları
 
 * Arayüz dili Türkçe. Metinlerde ve yorumlarda tire işareti (kısa, uzun veya çift) kullanılmaz; virgül, nokta veya cümle yeniden yazılır.
+* Terminoloji: oyuncunun gördüğü metinlerde bir tur "dosya"dır, numarası "dosya numarası"dır. Aranan kişi "hedef" veya "ilgi konusu şahıs" diye anılır. Suç, suçlu, sanık, şüpheli, ihbar gibi kelimeler kullanılmaz: bu kişi hakkında bir suçlama yoktur, devlet herhangi bir sebeple ulaşmak istemektedir. Kod içi isimler (dava, davaUret) değişmez, yalnızca görünen metinler bu kurala uyar.
 * Arayüz estetiği: 2010'lar Türk kamu yazılımı hissi. Gri paneller, seri numaraları, "Sorgula" butonları, yükleniyor çubuğu. Bu his bilinçlidir, modern ve renkli tasarım yapılmaz.
 * Kamera kareleri gerçek fotoğraf değildir. Stilize kare: siluet, araç şekli ve rengi, plaka bloğu, yön oku, zaman damgası, kamera kodu.
 * Her oturum başında bu dosya ve son commit mesajları okunur, ne yapılacağı Tolga'ya bir paragrafla özetlenir, sonra başlanır.

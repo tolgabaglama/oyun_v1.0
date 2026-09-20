@@ -24,13 +24,13 @@ export function ekranTurSonu(s: TurSonuSecenekleri): HTMLElement {
 
   return el("div", { sinif: "ekran tur-sonu-ekrani" },
     el("header", { sinif: "sonuc-baslik" + (basarili ? " basarili" : " basarisiz") },
-      el("div", { sinif: "sonuc-etiket" }, basarili ? "DOSYA KAPANDI" : "DOSYA DÜŞTÜ"),
+      el("div", { sinif: "sonuc-etiket" }, basarili ? "DOSYA ÇÖZÜLDÜ" : "DOSYA SONUÇSUZ KAPANDI"),
       el("h1", {}, basarili ? "HEDEF BULUNDU" : "HEDEF BULUNAMADI"),
       el("div", { sinif: "sonuc-alt" }, `${s.hedefAdi} · ${o.gercek_yer_metni}`),
     ),
 
     el("div", { sinif: "seed-serit" },
-      el("span", {}, "Dava numarası: ", el("strong", {}, String(s.seed))),
+      el("span", {}, "Dosya numarası: ", el("strong", {}, String(s.seed))),
       el("button", { type: "button", sinif: "kopyala-dugme", onclick: s.onSeedKopyala }, "kopyala"),
     ),
 
@@ -46,7 +46,7 @@ export function ekranTurSonu(s: TurSonuSecenekleri): HTMLElement {
       el("section", { sinif: "bolum" },
         el("h2", {}, "PAR KARŞILAŞTIRMASI"),
         el("p", { sinif: "par-metni" }, o.par_metni),
-        satir("Bu davanın par değeri", `${o.par} puan gider`),
+        satir("Bu dosyanın par değeri", `${o.par} puan gider`),
         satir("Sizin gideriniz", `${o.sorgu_maliyeti + o.ceza} puan`),
         el("div", { sinif: "par-yolu" },
           el("div", { sinif: "par-yolu-baslik" }, "EN VERİMLİ YOL"),
@@ -85,7 +85,7 @@ export function ekranTurSonu(s: TurSonuSecenekleri): HTMLElement {
 
     el("footer", { sinif: "sonuc-alt-cubuk" },
       el("button", { type: "button", onclick: s.onHaritayiIncele }, "Haritayı incele"),
-      el("button", { type: "button", sinif: "birincil", onclick: s.onYeniDava }, "Yeni dava"),
+      el("button", { type: "button", sinif: "birincil", onclick: s.onYeniDava }, "Yeni dosya"),
     ),
   );
 }

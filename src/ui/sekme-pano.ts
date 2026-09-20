@@ -100,7 +100,7 @@ export function sekmePano(s: PanoSekmesiSecenekleri): HTMLElement {
     el("section", { sinif: "bolum not-bolumu" },
       el("h2", {}, "NOT DEFTERİ"),
       notKutusu,
-      el("p", { sinif: "ipucu" }, "Notlar dava ile birlikte saklanır. Sistem kesişim hesaplamaz, çıkarım size aittir."),
+      el("p", { sinif: "ipucu" }, "Notlar dosya ile birlikte saklanır. Sistem kesişim hesaplamaz, çıkarım size aittir."),
     ),
     s.gecmis.length === 0
       ? el("p", { sinif: "bos-metin orta" }, "Pano boş. SORGU sekmesinden bir sorgu yapın.")

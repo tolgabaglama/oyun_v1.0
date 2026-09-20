@@ -185,13 +185,19 @@ type KatmanKurucu = (sensor: SensorTanimi, veri: Veri, kayitlar: Kayit[], p: Sor
 function poiNoktasi(veri: Veri, poiId: string, props: KatmanOzelligi["properties"]): KatmanOzelligi | null {
   const poi = veri.poiMap.get(poiId);
   if (!poi) return null;
-  return { type: "Feature", geometry: { type: "Point", coordinates: poi.konum }, properties: { poi_id: poi.id, kategori: poi.kategori, ilce: poi.ilce, ...props } };
+  return {
+    type: "Feature", geometry: { type: "Point", coordinates: poi.konum },
+    properties: { poi_id: poi.id, kategori: poi.kategori, ilce: poi.ilce, kunye_tip: "poi", kunye_id: poi.id, ...props },
+  };
 }
 
 function bolgeCokgeni(veri: Veri, tip: "mahalle" | "ilce", ilce: string | null, ad: string | null, props: KatmanOzelligi["properties"]): KatmanOzelligi | null {
   const b = tip === "ilce" ? (ilce ? veri.ilceBolgeleri.get(ilce) : undefined) : (ilce && ad ? veri.mahalleBolgeleri.get(`${ilce}|${ad}`) : undefined);
   if (!b) return null;
-  return { type: "Feature", geometry: { type: "MultiPolygon", coordinates: b.cokgenler }, properties: { ad: b.ad, ilce: b.ilce, ...props } };
+  return {
+    type: "Feature", geometry: { type: "MultiPolygon", coordinates: b.cokgenler },
+    properties: { ad: b.ad, ilce: b.ilce, kunye_tip: tip, kunye_id: b.ad, ...props },
+  };
 }
 
 const KATMAN_KURUCULAR: Record<SensorTanimi["ayak_izi"], KatmanKurucu> = {
@@ -228,7 +234,10 @@ const KATMAN_KURUCULAR: Record<SensorTanimi["ayak_izi"], KatmanKurucu> = {
     const out: KatmanOzelligi[] = [];
     for (const [kod, n] of sayim) {
       const h = veri.hucreMap.get(kod);
-      if (h) out.push({ type: "Feature", geometry: { type: "MultiPolygon", coordinates: h.cokgenler }, properties: { hucre_kodu: kod, kayit_sayisi: n, ilce: h.ilce, sensor_id: sensor.id } });
+      if (h) out.push({
+        type: "Feature", geometry: { type: "MultiPolygon", coordinates: h.cokgenler },
+        properties: { hucre_kodu: kod, kayit_sayisi: n, ilce: h.ilce, sensor_id: sensor.id, kunye_tip: "hucre", kunye_id: kod },
+      });
     }
     return out;
   },
@@ -241,7 +250,7 @@ const KATMAN_KURUCULAR: Record<SensorTanimi["ayak_izi"], KatmanKurucu> = {
       const kam = veri.kameraMap.get(kod);
       if (!kam) continue;
       const eslesme = kayitlar.filter((k) => k.alanlar.kamera_kodu === kod).length;
-      const props = { kamera_kodu: kod, tur: kam.tur, eslesme_sayisi: eslesme, yon: kam.yon, sensor_id: sensor.id };
+      const props = { kamera_kodu: kod, tur: kam.tur, eslesme_sayisi: eslesme, yon: kam.yon, sensor_id: sensor.id, kunye_tip: "kamera", kunye_id: kod };
       out.push({ type: "Feature", geometry: { type: "Polygon", coordinates: [koniCokgen(kam.konum, kam.yon, kam.koni, kam.menzil)] }, properties: props });
       out.push({ type: "Feature", geometry: { type: "Point", coordinates: kam.konum }, properties: props });
     }
@@ -251,12 +260,48 @@ const KATMAN_KURUCULAR: Record<SensorTanimi["ayak_izi"], KatmanKurucu> = {
     const out: KatmanOzelligi[] = [];
     const sirali = kayitlar.slice().sort((a, b) => zamanDakika(a.zaman) - zamanDakika(b.zaman));
     const gunler = new Map<number, Konum[]>();
+
+    // İki uçlu güzergâh (taksi): her kayıt kendi çizgisini taşır, yön bilgisi verilmez.
+    if (sensor.alanlar.includes("uc_poi_1")) {
+      for (const k of sirali) {
+        const a = veri.poiMap.get(String(k.alanlar.uc_poi_1));
+        const b = veri.poiMap.get(String(k.alanlar.uc_poi_2));
+        if (!a || !b) continue;
+        const ortak = { kayit_id: k.id, zaman: zamanMetni(k.zaman), sensor_id: sensor.id };
+        out.push({ type: "Feature", geometry: { type: "LineString", coordinates: [a.konum, b.konum] }, properties: { ...ortak, tip: "taksi_hatti" } });
+        for (const p of [a, b]) {
+          out.push({
+            type: "Feature", geometry: { type: "Point", coordinates: p.konum },
+            properties: { ...ortak, ad: p.ad, kategori: p.kategori, ilce: p.ilce, kunye_tip: "poi", kunye_id: p.id },
+          });
+        }
+      }
+      return out;
+    }
+
     for (const k of sirali) {
       let konum: Konum | null = null, ad: string | null = null;
-      if (k.geometri?.tip === "durak" || k.geometri?.tip === "istasyon") { const d = veri.durakMap.get(k.geometri.id); if (d) { konum = d.konum; ad = d.ad; } }
-      if (k.geometri?.tip === "gecis") { const g = veri.gecisMap.get(k.geometri.id); if (g) { konum = g.konum; ad = g.ad; } }
+      let kunyeTip: string | null = null, kunyeId: string | null = null;
+      if (k.geometri?.tip === "durak" || k.geometri?.tip === "istasyon") {
+        const d = veri.durakMap.get(k.geometri.id);
+        if (d) { konum = d.konum; ad = d.ad; kunyeTip = k.geometri.tip; kunyeId = d.id; }
+      }
+      if (k.geometri?.tip === "gecis") {
+        const g = veri.gecisMap.get(k.geometri.id);
+        if (g) { konum = g.konum; ad = g.ad; kunyeTip = "gecis"; kunyeId = g.id; }
+      }
+      if (k.geometri?.tip === "poi") {
+        const p = veri.poiMap.get(k.geometri.id);
+        if (p) { konum = p.konum; ad = p.ad; kunyeTip = "poi"; kunyeId = p.id; }
+      }
       if (!konum) continue;
-      out.push({ type: "Feature", geometry: { type: "Point", coordinates: konum }, properties: { kayit_id: k.id, ad, zaman: zamanMetni(k.zaman), yon: (k.alanlar.yon as string) ?? null, sensor_id: sensor.id } });
+      out.push({
+        type: "Feature", geometry: { type: "Point", coordinates: konum },
+        properties: {
+          kayit_id: k.id, ad, zaman: zamanMetni(k.zaman), yon: (k.alanlar.yon as string) ?? null,
+          sensor_id: sensor.id, kunye_tip: kunyeTip, kunye_id: kunyeId,
+        },
+      });
       if (!gunler.has(k.zaman.gun)) gunler.set(k.zaman.gun, []);
       gunler.get(k.zaman.gun)!.push(konum);
     }

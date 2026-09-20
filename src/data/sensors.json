@@ -36,7 +36,8 @@
     "doviz": "Döviz bürosunda işlem.",
     "benzin": "Benzinlikte yakıt alımı, araç modunda.",
     "park": "Otoparka giriş, araç modunda.",
-    "paylasim": "Sosyal medyada açık paylaşım, nadir."
+    "paylasim": "Sosyal medyada açık paylaşım, nadir.",
+    "taksi": "Taksiyle yolculuk. Ödeme kartla yapılırsa iki uç noktası banka kaydına düşer, hangisinin varış olduğu kayıtta yer almaz."
   },
   "gurultu_tipleri": {
     "eski_adres": "Kayıt eski, kişi artık orada oturmuyor. Adres başka bir POI'ye işaret eder.",
@@ -599,6 +600,43 @@
       "kart_metni": "{gun}. gün: döviz işlemi, {tutar_araligi}."
     },
     {
+      "id": "taksi",
+      "ad": "Taksi ödemesi",
+      "kurum": "FİNANSNET",
+      "kademe": 3,
+      "maliyet": 120,
+      "ayak_izi": "guzergah",
+      "varyant": "dar",
+      "es_varyant": "banka_dokum",
+      "kapsam": {
+        "tip": "pencere_gun",
+        "gun": 14
+      },
+      "olaylar": [
+        "taksi"
+      ],
+      "odeme_gerekir": "kart",
+      "yakalama_olasiligi": 1.0,
+      "alanlar": [
+        "uc_poi_1",
+        "uc_poi_2",
+        "gun",
+        "saat",
+        "tutar_araligi"
+      ],
+      "gurultu": [],
+      "sert_kisit": {
+        "tip": "aday_yer"
+      },
+      "parametreler": [],
+      "kart_metni": "{gun}. gün {saat}: taksi yolculuğu, {tutar_araligi}.",
+      "tutar_araliklari": [
+        "0-200 TL",
+        "200-500 TL",
+        "500-1.000 TL"
+      ]
+    },
+    {
       "id": "ev_interneti",
       "ad": "Ev interneti IP kaydı",
       "kurum": "İLETİŞİMNET",
@@ -755,7 +793,8 @@
       "es_varyant": [
         "atm",
         "pos",
-        "doviz"
+        "doviz",
+        "taksi"
       ],
       "kapsam": {
         "tip": "pencere_gun",
@@ -766,12 +805,14 @@
         "alisveris",
         "benzin",
         "eczane",
-        "doviz"
+        "doviz",
+        "taksi"
       ],
       "birlesik": [
         "atm",
         "pos",
-        "doviz"
+        "doviz",
+        "taksi"
       ],
       "yakalama_olasiligi": 1.0,
       "alanlar": [
@@ -780,7 +821,9 @@
         "kategori",
         "gun",
         "saat",
-        "tutar_araligi"
+        "tutar_araligi",
+        "uc_poi_1",
+        "uc_poi_2"
       ],
       "gurultu": [],
       "sert_kisit": {
@@ -906,5 +949,6 @@
     }
   ],
   "kapsama_aciklamasi": "Bazı sensörler yalnızca belirli POI kategorilerinde kayıt bırakır. kapsama alanı: hangi POI alanına bakılacağı, kategori başına oran ve varsayılan. Oran POI başına bir kez ve deterministik olarak çözülür; aynı POI dava boyunca ya kapsamdadır ya değildir.",
-  "bos_sonuc_aciklamasi": "bos_kosulu sağlanan kayıt anlamlı bilgi taşımaz: yalnızca bos_metni gösterilir, diğer alanlar ve harita katmanı düşer."
+  "bos_sonuc_aciklamasi": "bos_kosulu sağlanan kayıt anlamlı bilgi taşımaz: yalnızca bos_metni gösterilir, diğer alanlar ve harita katmanı düşer.",
+  "tutar_aciklamasi": "Sensör kendi tutar_araliklari listesini verebilir; vermezse genel banka aralıkları kullanılır."
 }

@@ -17,8 +17,16 @@ const DOGRU_YARICAP_M = 150;
 
 export type HaritaModu = "gez" | "nokta_secim" | "kamera_secim" | "raptiye" | "dislama";
 
+/** Haritada tıklanan ögenin künyesi; metin uygulama katmanında üretilir. */
+export interface Kunye {
+  baslik: string;
+  satirlar: string[];
+}
+
 export interface HaritaOlaylari {
   onNoktaSecildi: (tip: "poi" | "kamera", id: string) => void;
+  /** Tıklanan ögenin özellikleri ve bulunduğu katmandan künye üretir. */
+  kunyeCoz: (ozellikler: Record<string, unknown>, katmanId: string) => Kunye | null;
   onRaptiye: (konum: Konum) => void;
   onDislama: (merkez: Konum, yaricapM: number) => void;
   onTahmin: (konum: Konum) => void;
@@ -172,29 +180,28 @@ export class HaritaYoneticisi {
     return this.harita!.queryRenderedFeatures(kutu as never, { layers: mevcut });
   }
 
-  /** Gez modunda noktaya dokununca künye balonu açılır. */
+  /** Künyesi gösterilebilecek tüm katmanlar: sorgu katmanları ve genel nokta katmanları. */
+  private kunyeKatmanlari(): string[] {
+    const out: string[] = [];
+    for (const kaynak of this.eklenenKatmanlar) out.push(`${kaynak}-nokta`, `${kaynak}-dolgu`);
+    out.push("tum-kameralar", "tum-noktalar");
+    return out;
+  }
+
+  /** Gez modunda bir ögeye dokununca künye balonu açılır. */
   private balonGoster(e: MapMouseEvent): void {
-    const ozellikler = this.yakindakiler(e, ["tum-kameralar", "tum-noktalar"]);
-    const f = ozellikler[0];
+    const ozellikler = this.yakindakiler(e, this.kunyeKatmanlari());
     this.balon?.remove();
-    if (!f) return;
-    const p = f.properties as Record<string, string>;
-    const satirlar: string[] = [];
-    let baslik: string;
-    if (p.kamera_kodu) {
-      baslik = p.kamera_kodu;
-      satirlar.push(p.tur_adi, p.yol_adi || "Yol adı yok", p.ilce, `Bakış yönü ${p.yon}°`);
-    } else {
-      // Adı olmayan noktalarda kategori başlığa çıkar, satırda tekrar edilmez.
-      const adVar = Boolean(p.ad && p.ad !== "null");
-      baslik = adVar ? p.ad : p.kategori;
-      if (adVar) satirlar.push(p.kategori);
-      satirlar.push(p.mahalle && p.mahalle !== "null" ? `${p.ilce} / ${p.mahalle}` : p.ilce, p.kamera_durumu);
-    }
-    const govde = satirlar.filter(Boolean).map((x) => `<div class="balon-satir">${x}</div>`).join("");
-    this.balon = new Popup({ closeButton: true, maxWidth: "230px", className: "nokta-balonu" })
+    if (!ozellikler.length) return;
+    // Nokta katmanları çokgenlerin önünde değerlendirilir; nokta yoksa çokgene düşülür.
+    const f = ozellikler.find((x) => x.geometry.type === "Point") ?? ozellikler[0];
+    const kunye = this.olaylar.kunyeCoz(f.properties as Record<string, unknown>, String(f.layer?.id ?? ""));
+    if (!kunye) return;
+    const kacir = (m: string) => m.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+    const govde = kunye.satirlar.filter(Boolean).map((x) => `<div class="balon-satir">${kacir(x)}</div>`).join("");
+    this.balon = new Popup({ closeButton: true, maxWidth: "240px", className: "nokta-balonu" })
       .setLngLat(e.lngLat)
-      .setHTML(`<div class="balon-baslik">${baslik}</div>${govde}`)
+      .setHTML(`<div class="balon-baslik">${kacir(kunye.baslik)}</div>${govde}`)
       .addTo(this.harita!);
   }
 

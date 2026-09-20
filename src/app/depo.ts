@@ -1,10 +1,14 @@
 // Yerel depolama. Yarım kalan tur ve son kullanılan ayarlar burada tutulur.
 // Tarayıcı depolaması kapalıysa oyun çalışmaya devam eder, yalnızca kayıt yapılmaz.
 
+import type { TurKaydi } from "./gorunum.ts";
 import type { KayitliOturum } from "./oturum.ts";
 
 const ANAHTAR_TUR = "iz.tur";
 const ANAHTAR_AYAR = "iz.ayar";
+const ANAHTAR_GECMIS = "iz.gecmis";
+/** Yerelde tutulan en fazla tur kaydı sayısı. */
+const GECMIS_SINIRI = 100;
 
 export interface Ayarlar {
   son_zorluk: string;
@@ -43,6 +47,16 @@ export function turSil(): void {
   } catch {
     // yok sayılır
   }
+}
+
+/** Biten turların kaydı, en yeniden eskiye. Liderlik tablosu Aşama 7'de bu kayıtlardan kurulur. */
+export function gecmisOku(): TurKaydi[] {
+  const g = guvenliOku<TurKaydi[]>(ANAHTAR_GECMIS);
+  return Array.isArray(g) ? g : [];
+}
+
+export function gecmiseEkle(kayit: TurKaydi): void {
+  guvenliYaz(ANAHTAR_GECMIS, [kayit, ...gecmisOku()].slice(0, GECMIS_SINIRI));
 }
 
 export function ayarOku(): Ayarlar {

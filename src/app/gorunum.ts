@@ -182,6 +182,29 @@ export const KAMERA_TUR_ADLARI: Record<string, string> = {
   meydan: "Meydan kamerası",
 };
 
+/**
+ * Biten turun düz kaydı. Sunucuya gönderilmeye uygun olsun diye yalnızca sayı ve metin taşır;
+ * kişisel bilgi, kullanıcı adı veya cihaz kimliği içermez. Şimdilik yalnızca yerelde saklanır.
+ */
+export interface TurKaydi {
+  surum: 1;
+  seed: number;
+  zorluk: Zorluk;
+  sonuc: TurSonucu;
+  puan: number;
+  par: number;
+  sorgu_sayisi: number;
+  kullanilan_sensorler: string[];
+  yanlis_tahmin: number;
+  toplam_kayit: number;
+  kullanilan_kayit: number;
+  /** Turun açılışından bitişine geçen süre, saniye. */
+  sure_sn: number;
+  /** Turun bittiği an, ISO 8601. */
+  tarih: string;
+  uretici_surumu: string;
+}
+
 export const ZORLUK_ADLARI: Record<Zorluk, string> = {
   kolay: "Kolay",
   standart: "Standart",

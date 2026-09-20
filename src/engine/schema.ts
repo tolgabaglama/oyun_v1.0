@@ -5,7 +5,7 @@
 // ---- Temel sözlükler ----------------------------------------------------------------------
 
 export type Zorluk = "kolay" | "standart" | "uzman";
-export type UlasimModu = "arac" | "toplu_tasima" | "karisik";
+export type UlasimModu = "arac" | "toplu_tasima" | "karisik" | "taksi";
 export type OdemeDisiplini = "hep_kart" | "hep_nakit" | "doviz_sonrasi_nakit";
 export type TelefonDisiplini = "hep_acik" | "geceleri_kapali" | "son_3_gun_kapali";
 export type YerRolu = "ev" | "is" | "ucuncu" | "rutin_disi";
@@ -13,7 +13,7 @@ export type Yaka = "avrupa" | "anadolu";
 export type Odeme = "kart" | "nakit";
 
 export const ZORLUKLAR: readonly Zorluk[] = ["kolay", "standart", "uzman"];
-export const ULASIM_MODLARI: readonly UlasimModu[] = ["arac", "toplu_tasima", "karisik"];
+export const ULASIM_MODLARI: readonly UlasimModu[] = ["arac", "toplu_tasima", "karisik", "taksi"];
 export const ODEME_DISIPLINLERI: readonly OdemeDisiplini[] = ["hep_kart", "hep_nakit", "doviz_sonrasi_nakit"];
 export const TELEFON_DISIPLINLERI: readonly TelefonDisiplini[] = ["hep_acik", "geceleri_kapali", "son_3_gun_kapali"];
 
@@ -97,6 +97,8 @@ export interface SensorTanimi {
   yakalama_yaricapi_m?: number;
   belirsizlik_m?: number;
   alanlar: string[];
+  /** Sensöre özel tutar aralıkları; yoksa genel banka aralıkları kullanılır. */
+  tutar_araliklari?: string[];
   gurultu: GurultuKurali[];
   bos_kosulu?: BosKosulu;
   bos_metni?: string;

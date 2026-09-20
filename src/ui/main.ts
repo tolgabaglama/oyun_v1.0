@@ -14,7 +14,7 @@ import { sekmeHarita } from "./sekme-harita.ts";
 import { HaritaYoneticisi, type HaritaModu } from "./harita.ts";
 import { veriYukleWeb, katalogYukleWeb } from "../engine/data-web.ts";
 import { DavaBulunamadi, Oturum } from "../app/oturum.ts";
-import { ayarOku, ayarYaz, turOku, turSil, turYaz } from "../app/depo.ts";
+import { ayarOku, ayarYaz, gecmiseEkle, turOku, turSil, turYaz } from "../app/depo.ts";
 import { ZORLUK_ADLARI, type Konum, type SonucGorunumu, type TahminGorunumu, type Zorluk } from "../app/gorunum.ts";
 import type { Veri } from "../engine/data.ts";
 import type { SensorKatalogu } from "../engine/schema.ts";
@@ -64,11 +64,11 @@ function hataGoster(mesaj: string): void {
 
 /** Dava numarasını panoya kopyalar; izin yoksa sessizce geçer. */
 function seedKopyala(seed: number): void {
-  const bildir = () => hataGoster(`Dava numarası kopyalandı: ${seed}`);
+  const bildir = () => hataGoster(`Dosya numarası kopyalandı: ${seed}`);
   try {
-    void navigator.clipboard?.writeText(String(seed)).then(bildir, () => hataGoster(`Dava numarası: ${seed}`));
+    void navigator.clipboard?.writeText(String(seed)).then(bildir, () => hataGoster(`Dosya numarası: ${seed}`));
   } catch {
-    hataGoster(`Dava numarası: ${seed}`);
+    hataGoster(`Dosya numarası: ${seed}`);
   }
 }
 
@@ -82,7 +82,7 @@ function turBaslat(seed: number, zorluk: Zorluk): void {
   try {
     uyg.oturum = Oturum.baslat(seed, zorluk, uyg.veri, uyg.katalog);
   } catch (e) {
-    hataGoster(e instanceof DavaBulunamadi ? e.message : "Dava üretilemedi.");
+    hataGoster(e instanceof DavaBulunamadi ? e.message : "Dosya üretilemedi.");
     return;
   }
   uyg.sekme = "dosya";
@@ -107,6 +107,7 @@ function haritaKur(): HaritaYoneticisi {
       uyg.sekme = "sorgu";
       ciz();
     },
+    kunyeCoz: (ozellikler, katmanId) => uyg.oturum?.kunye(ozellikler, katmanId) ?? null,
     onRaptiye: (konum) => { bekleyenRaptiye = konum; haritaModu = "gez"; ciz(); },
     onDislama: (merkez, yaricap) => {
       uyg.oturum!.dislamalar = [...uyg.oturum!.dislamalar, { id: `D${Date.now().toString(36)}`, merkez, yaricap_m: yaricap }];
@@ -273,7 +274,10 @@ function tahminPenceresi(konum: Konum): HTMLElement {
         el("button", { type: "button", onclick: kapat }, "Vazgeç"),
         el("button", { type: "button", sinif: "birincil", onclick: () => {
           tahminOnayi = null;
-          acikTahmin = uyg.oturum!.tahmin(konum);
+          const o = uyg.oturum!;
+          acikTahmin = o.tahmin(konum);
+          // Tur bittiyse sonucu yerel geçmişe yaz; sunucu yok, kullanıcı adı yok.
+          if (o.bitti()) gecmiseEkle(o.turKaydi());
           kaydet();
           ciz();
         } }, "Tahmini gönder"),
@@ -386,7 +390,7 @@ function ciz(): void {
   const kayit = turOku();
   let devamOzeti = "";
   if (kayit) {
-    devamOzeti = `Dava ${kayit.seed}, ${ZORLUK_ADLARI[kayit.zorluk]}, ${kayit.sorgular.length} sorgu yapılmış.`;
+    devamOzeti = `Dosya ${kayit.seed}, ${ZORLUK_ADLARI[kayit.zorluk]}, ${kayit.sorgular.length} sorgu yapılmış.`;
     if (kayit.tahminler.length) devamOzeti += ` ${kayit.tahminler.length} tahmin kullanılmış.`;
   }
   temizle(kok, anaEkran({

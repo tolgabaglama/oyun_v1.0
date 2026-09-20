@@ -106,9 +106,10 @@ describe("gerçekle tutarlılık", () => {
         if (k.gurultu !== null) continue;
         const o = olaylar.get(k.olay_id!)!;
         // Kaydın işaret ettiği POI, türediği olayın yeriyle veya yolculuğun uçlarıyla aynı olmalı.
+        // Taksi gibi iki uçlu olaylarda hangi ucun varış olduğu kayda yazılmaz, ikisi de geçerlidir.
         if (k.geometri?.tip === "poi") {
-          const beklenen = o.tur === "yolculuk"
-            ? [o.yolculuk!.nereden_poi_id, o.yolculuk!.nereye_poi_id]
+          const beklenen = o.yolculuk
+            ? [o.yolculuk.nereden_poi_id, o.yolculuk.nereye_poi_id]
             : [o.yer_poi_id];
           expect(beklenen).toContain(k.geometri.id);
         }
@@ -116,6 +117,18 @@ describe("gerçekle tutarlılık", () => {
         const s = katalog.sensorler.find((x) => x.id === k.sensor_id)!;
         if (s.telefon_gerekir) expect(o.telefon_acik).toBe(true);
         if (s.odeme_gerekir) expect(o.odeme).toBe(s.odeme_gerekir);
+      }
+    }
+  });
+
+  it("taksi kaydının iki ucu da hedefin gerçek yerlerinden biridir", () => {
+    for (const d of ornekler) {
+      const olaylar = new Map(d.olaylar.map((o) => [o.id, o]));
+      for (const k of d.kayitlar.filter((x) => x.sensor_id === "taksi" && x.gurultu === null)) {
+        const o = olaylar.get(k.olay_id!)!;
+        const uclar = [String(k.alanlar.uc_poi_1), String(k.alanlar.uc_poi_2)].sort();
+        const gercek = [o.yolculuk!.nereden_poi_id, o.yolculuk!.nereye_poi_id].sort();
+        expect(uclar).toEqual(gercek);
       }
     }
   });
