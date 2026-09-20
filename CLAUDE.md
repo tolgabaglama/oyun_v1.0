@@ -99,11 +99,14 @@ Aynı sensörün dar sorgusu ucuz, geniş sorgusu pahalıdır (örnek: "son kay�
 * Spor salonu üyeliği: hedeflerin yaklaşık üçte biri üyedir. Üye olanın üçüncü noktası spor salonu olur ve turnike kaydı bırakır.
 * İş çevresi: hafta içi öğle aralarında iş noktasının yaklaşık 300 metre yakınındaki bir yere gidilir (market, kahvehane, eczane, kargo şubesi, döviz bürosu). Ödeme disiplinine uyar: kart disiplininde POS kaydı, nakit disiplininde önce çevredeki ATM'den çekim sonra nakit ödeme. Nakit ödeme banka kaydı bırakmaz ama özel kamera kapsamına girer. Bu davranış iş yerinin kendisini değil çevresini işaretler; oyuncu ve oracle "bu civarda çalışıyor" çıkarımını yapıp çevredeki noktalara doğrulama sorgusu gönderir.
 * Telefon disiplini: hep açık, geceleri kapalı, son 3 gün kapalı.
+* Baz kaydının geçerlilik kuralı: cihaz şu anda açıksa son sinyal hedefin bulunduğu hücreye aittir ve konum kanıtıdır, komşu hücre gürültüsü bu kayda uygulanmaz. Cihaz kapalıysa son sinyal kapanma anına aittir, konum kanıtı sayılmaz. Her iki durumda da kaydın üstünde cihazın açık mı kapalı mı olduğu ve kapalıysa kaç gündür sinyal alınmadığı yazar. Oyuncu verinin ne zaman geçerli olduğunu bilmeden adil karar veremez.
 * Şu anki konum: kolayda ev, ortada iş veya üçüncü nokta, zorda rutin dışı bir yer.
 
 Adalet kuralı: şu anki konumun geçmiş izlerde en az bir bağı olmalıdır. Rutin çalıştırılır, her hareket sensörlere olasılıkla düşer, gürültü eklenir (aynı isimli ikinci kişi, komşu hücreye sıçrayan baz kaydı, sahte adres).
 
 Oracle: sadece sızdırılan verilerle hedef tek noktaya indirilebiliyor mu, en ucuz yol nedir? Çözülemeyen dava atılır ve yeniden üretilir. Tek sorguda biten dava atılır. En ucuz yolun maliyeti par olur. Oracle için birim testleri zorunludur.
+
+Tutarlılık kuralı: üretilen dosyada hiçbir konumlayıcı sert kısıt gizli gerçekle çelişmemelidir. Çelişen dosya oyuncuyu kesin bir veriyle yanlış bölgeye götürür ve üretim aşamasında reddedilir. Bu denetim her dosyada çalışır ve testle doğrulanır.
 
 ## 7. Veri kaynakları
 

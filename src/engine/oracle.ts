@@ -122,6 +122,11 @@ export function kisitHesapla(dava: Dava, veri: Veri, sensor: SensorTanimi, gerce
     if (!gercekKullan) return null;
     if (!sk.kosul.ulasim.includes(dava.gercek.ulasim)) return null;
   }
+  // Kaydın kendi alanına bakan koşul: oyuncu da bu bilgiyi görür, gizli gerçek gerekmez.
+  if (sk.kosul?.alan !== undefined) {
+    const son = sonKayit(kayitlar)!;
+    if (son.alanlar[sk.kosul.alan] !== sk.kosul.deger) return null;
+  }
   if (sk.tip === "dogrulayici") return null;
   let adaylar: Set<string> | null = null;
   switch (sk.tip) {
@@ -184,6 +189,22 @@ export function dogrulayiciHesapla(dava: Dava, veri: Veri, sensor: SensorTanimi)
 }
 
 /**
+ * Üretilen dosyanın sert kısıtları gizli gerçekle çelişiyor mu.
+ * Konumlayıcı bir kısıt hedefin gerçek konumunu dışlıyorsa dosya oyuncuyu yanıltır:
+ * elindeki veri onu kesin olarak yanlış bölgeye götürür. Böyle dosya üretimde reddedilir.
+ */
+export function tutarlilikDenetle(dava: Dava, veri: Veri, katalog: SensorKatalogu): string[] {
+  const gercekId = dava.gercek.su_anki_konum.poi_id;
+  const hatalar: string[] = [];
+  for (const sensor of katalog.sensorler) {
+    const k = kisitHesapla(dava, veri, sensor, true);
+    if (!k || !k.konumlayici) continue;
+    if (!k.adaylar.has(gercekId)) hatalar.push(`${sensor.id} (${k.tip}) kısıtı gerçek konumu dışlıyor`);
+  }
+  return hatalar;
+}
+
+/**
  * Kısıt listesini uygular: konumlayıcılar kesişir, daraltıcılar birleşip kesişir.
  * cevreM sıfırdan büyükse daraltıcı izlerin o yarıçaptaki komşuları da adaylığa girer.
  */
@@ -236,13 +257,14 @@ export function parHesapla(dava: Dava, veri: Veri, katalog: SensorKatalogu): Par
     .filter((s) => s.sert_kisit)
     .sort((a, b) => a.maliyet - b.maliyet || a.id.localeCompare(b.id));
 
+  // Dosya oyuncuyu yanıltmamalı: hiçbir konumlayıcı kısıt gerçek konumu dışlamamalı.
+  const celiskiler = tutarlilikDenetle(dava, veri, katalog);
+  if (celiskiler.length) throw new OracleReddi("kisit_hatasi", celiskiler.join("; "));
+
   const kisitlar: Kisit[] = [];
   for (const s of sensorler) {
     const k = kisitHesapla(dava, veri, s, true);
-    if (!k) continue;
-    // Konumlayıcı kısıt gerçeği dışlıyorsa üretici ile oracle tutarsız demektir.
-    if (k.konumlayici && !k.adaylar.has(gercekId)) throw new OracleReddi("kisit_hatasi", `${s.id} kısıtı gerçek konumu dışlıyor`);
-    kisitlar.push(k);
+    if (k) kisitlar.push(k);
   }
   const maliyet = new Map(sensorler.map((s) => [s.id, s.maliyet]));
 

@@ -43,7 +43,7 @@
     "eski_adres": "Kayıt eski, kişi artık orada oturmuyor. Adres başka bir POI'ye işaret eder.",
     "baskasinin_aboneligi": "Abonelik kiracıya veya akrabaya ait, adres hedefle ilgisiz.",
     "adas": "Aynı isimli ikinci kişi. Kayıt hedefin hiç gitmediği rastgele bir noktada.",
-    "komsu_hucre": "Baz kaydı gerçek hücrenin komşusuna sıçradı.",
+    "komsu_hucre": "Baz kaydı gerçek hücrenin komşusuna sıçradı. Cihaz açıkken alınan son sinyale uygulanmaz: o kayıt konum kanıtıdır.",
     "sahte_eslesme": "Kamera yüz eşleştirmesi yanlış kişiyi işaret etti.",
     "gecikmeli_kayit": "Kayıt saati gerçek olaydan 1 ila 3 saat sonra görünüyor.",
     "saklama_suresi_doldu": "Kamera kaydı saklama süresi geçtiği için silinmiş. Eşleşme alanı 'silinmiş' döner, konum bilgisi vermez.",
@@ -480,21 +480,27 @@
       "alanlar": [
         "hucre_kodu",
         "gun",
-        "saat"
+        "saat",
+        "cihaz_acik",
+        "cihaz_durumu"
       ],
       "gurultu": [
         {
           "tip": "komsu_hucre",
-          "olasilik": 0.15
+          "olasilik": 0.15,
+          "son_kayit_haric": true
         }
       ],
       "sert_kisit": {
         "tip": "hucre",
         "komsular_dahil": true,
-        "yakinlik_saat": 2
+        "kosul": {
+          "alan": "cihaz_acik",
+          "deger": "evet"
+        }
       },
       "parametreler": [],
-      "kart_metni": "Son görülme: hücre {hucre_kodu}, {gun}. gün {saat}."
+      "kart_metni": "Son sinyal: hücre {hucre_kodu}, {gun}. gün {saat}. Cihaz {cihaz_durumu}."
     },
     {
       "id": "atm",
@@ -766,12 +772,15 @@
       "alanlar": [
         "hucre_kodu",
         "gun",
-        "saat"
+        "saat",
+        "cihaz_acik",
+        "cihaz_durumu"
       ],
       "gurultu": [
         {
           "tip": "komsu_hucre",
-          "olasilik": 0.15
+          "olasilik": 0.15,
+          "son_kayit_haric": true
         }
       ],
       "sert_kisit": {

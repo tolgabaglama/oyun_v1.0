@@ -421,6 +421,14 @@ function alanDoldur(k: KayitBaglami, sensor: SensorTanimi, olay: Olay, poi: Poi 
       case "tutar_araligi": out[alan] = k.rng.sec(sensor.tutar_araliklari ?? TUTARLAR); break;
       case "sure_dk": out[alan] = olay.bitis ? zamanDakika(olay.bitis) - zamanDakika(olay.zaman) : k.rng.tam(30, 240); break;
       case "kaynak_sensor": out[alan] = sensor.id; break;
+      // Cihazın şu andaki durumu: kaydın ne zaman geçerli olduğunu oyuncu bilmeden karar veremez.
+      case "cihaz_acik": out[alan] = telefonAcik(k.model, k.suAn) ? "evet" : "hayır"; break;
+      case "cihaz_durumu": {
+        if (telefonAcik(k.model, k.suAn)) { out[alan] = "açık, sinyal alınıyor"; break; }
+        const gunFarki = k.suAn.gun - z.gun;
+        out[alan] = gunFarki >= 1 ? `kapalı, ${gunFarki} gündür sinyal yok` : "kapalı, son sinyal bu";
+        break;
+      }
       // Taksi yolculuğunun uçları; sıra üretimde karıştırılmıştır.
       case "uc_poi_1": out[alan] = olay.yolculuk?.nereden_poi_id ?? null; break;
       case "uc_poi_2": out[alan] = olay.yolculuk?.nereye_poi_id ?? null; break;
@@ -466,7 +474,10 @@ const ISLEYICILER: Record<string, Isleyici> = {
   hucre(k, sensor, olay) {
     const poiId = olay.tur === "yolculuk" ? olay.yolculuk!.nereye_poi_id : olay.yer_poi_id!;
     const poi = k.veri.poiMap.get(poiId)!;
-    const z = olay.tur === "yolculuk" && olay.bitis ? olay.bitis : olay.zaman;
+    // Cihaz açıkken sinyal kesilmez: şu anı kapsayan konum olayının kaydı şu ana aittir.
+    const kapsiyor = olay.tur === "konum" && olay.bitis !== null
+      && zamanDakika(olay.zaman) <= zamanDakika(k.suAn) && zamanDakika(olay.bitis) >= zamanDakika(k.suAn);
+    const z = kapsiyor ? k.suAn : olay.tur === "yolculuk" && olay.bitis ? olay.bitis : olay.zaman;
     const h = hucreBul(k.veri, poi.konum);
     if (!h) return [];
     return [yeniKayit(k, sensor, olay, z, alanDoldur(k, sensor, olay, poi, z, { hucre_kodu: h.kod }), { tip: "hucre", id: h.kod })];
@@ -577,7 +588,10 @@ function gurultuUygula(k: KayitBaglami, sensor: SensorTanimi, kayitlar: Kayit[])
         break;
       }
       case "komsu_hucre": {
+        // Son sinyal konum kanıtıdır; sıçrama yalnızca daha eski kayıtlara uygulanır.
+        const sonZaman = out.length ? Math.max(...out.map((x) => zamanDakika(x.zaman))) : -1;
         out = out.map((kayit) => {
+          if (kural.son_kayit_haric && zamanDakika(kayit.zaman) === sonZaman) return kayit;
           if (!sans(kural)) return kayit;
           const h = k.veri.hucreMap.get(String(kayit.alanlar.hucre_kodu));
           if (!h || !h.komsular.length) return kayit;

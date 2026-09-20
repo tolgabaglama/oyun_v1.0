@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { veriYukleNode, katalogYukleNode } from "../src/engine/data-node.ts";
 import { davaUret, UretimReddi, bagVar } from "../src/engine/generator.ts";
-import { davaKur, parHesapla, kisitHesapla, kisitlariUygula, tekNoktaMi, dogrulayiciHesapla, OracleReddi, DOGRU_YARICAP_M } from "../src/engine/oracle.ts";
+import { davaKur, parHesapla, kisitHesapla, kisitlariUygula, tekNoktaMi, dogrulayiciHesapla, tutarlilikDenetle, OracleReddi, DOGRU_YARICAP_M } from "../src/engine/oracle.ts";
 import { davaDogrula, zamanDakika, type Dava, type SensorKatalogu, type Zorluk } from "../src/engine/schema.ts";
 import type { Veri } from "../src/engine/data.ts";
 import { sorgula, kullanilabilirSensorler, SorguHatasi } from "../src/engine/query.ts";
 import { turBaslat, sorguYap, tahminYap, turOzeti, TAVAN_PUAN, YANLIS_CEZASI } from "../src/engine/scoring.ts";
 import { mesafeM } from "../src/engine/geo.ts";
+import { hucreBul } from "../src/engine/data.ts";
 
 let veri: Veri;
 let katalog: SensorKatalogu;
@@ -181,6 +182,89 @@ describe("gerçekle tutarlılık", () => {
       if (rol === "rutin_disi") expect(d.zorluk).toBe("uzman");
       else expect(d.gercek.su_anki_konum.poi_id).toBe(roller[rol as keyof typeof roller].poi_id);
     }
+  });
+});
+
+describe("baz kaydı ve cihaz durumu", () => {
+  /** Kural: cihaz açıkken son sinyal hedefin bulunduğu hücredir ve konum kanıtıdır. */
+  it("cihaz açıkken son baz kaydı hedefin hücresidir ve konumlayıcıdır", () => {
+    const sensor = katalog.sensorler.find((s) => s.id === "baz_son")!;
+    for (const d of ornekler) {
+      const k = d.kayitlar.find((x) => x.sensor_id === "baz_son");
+      if (!k || k.alanlar.cihaz_acik !== "evet") continue;
+      const gercekHucre = hucreBul(veri, d.gercek.su_anki_konum.konum)?.kod;
+      expect(k.alanlar.hucre_kodu).toBe(gercekHucre);
+      const kisit = kisitHesapla(d, veri, sensor, true);
+      expect(kisit).not.toBeNull();
+      expect(kisit!.konumlayici).toBe(true);
+      expect(kisit!.adaylar.has(d.gercek.su_anki_konum.poi_id)).toBe(true);
+    }
+  });
+
+  it("cihaz kapalıyken son baz kaydı konum kanıtı sayılmaz", () => {
+    const sensor = katalog.sensorler.find((s) => s.id === "baz_son")!;
+    for (const d of ornekler) {
+      const k = d.kayitlar.find((x) => x.sensor_id === "baz_son");
+      if (!k || k.alanlar.cihaz_acik !== "hayır") continue;
+      expect(kisitHesapla(d, veri, sensor, true)).toBeNull();
+    }
+  });
+
+  it("cihaz durumu metni kaydın ne zaman geçerli olduğunu söyler", () => {
+    for (const d of ornekler) {
+      for (const k of d.kayitlar.filter((x) => x.sensor_id === "baz_son")) {
+        const metin = String(k.alanlar.cihaz_durumu);
+        expect(metin.length).toBeGreaterThan(0);
+        expect(k.alanlar.cihaz_acik === "evet" ? metin.startsWith("açık") : metin.startsWith("kapalı")).toBe(true);
+      }
+    }
+  });
+
+  it("cihaz açıkken alınan son sinyale komşu hücre gürültüsü uygulanmaz", () => {
+    for (const d of ornekler) {
+      const k = d.kayitlar.find((x) => x.sensor_id === "baz_son");
+      if (!k || k.alanlar.cihaz_acik !== "evet") continue;
+      expect(k.gurultu).not.toBe("komsu_hucre");
+    }
+  });
+});
+
+describe("tutarlılık", () => {
+  it("kabul edilen hiçbir dosyada sert kısıt gizli gerçekle çelişmez", () => {
+    for (const d of ornekler) expect(tutarlilikDenetle(d, veri, katalog)).toEqual([]);
+  });
+
+  it("300 seedde üretilen hiçbir dosyada çelişki yoktur", () => {
+    const zorluklar: Zorluk[] = ["kolay", "standart", "uzman"];
+    let uretilen = 0;
+    const celiskiler: string[] = [];
+    for (let seed = 1; seed <= 300; seed++) {
+      let d: Dava;
+      try {
+        d = davaUret(seed, zorluklar[seed % 3], veri, katalog);
+      } catch (e) {
+        if (e instanceof UretimReddi) continue;
+        throw e;
+      }
+      uretilen++;
+      const h = tutarlilikDenetle(d, veri, katalog);
+      if (h.length) celiskiler.push(`seed ${seed}: ${h.join(", ")}`);
+    }
+    expect(uretilen).toBeGreaterThan(250);
+    expect(celiskiler).toEqual([]);
+  });
+
+  it("çelişkili dosya denetimden geçemez ve oracle onu reddeder", () => {
+    // Yapay çelişki: cihaz açık görünen son baz kaydı hedeften uzak bir hücreye taşınır.
+    const kaynak = ornekler.find((d) => d.kayitlar.some((k) => k.sensor_id === "baz_son" && k.alanlar.cihaz_acik === "evet"))!;
+    const sahte: Dava = structuredClone(kaynak);
+    const kayit = sahte.kayitlar.find((k) => k.sensor_id === "baz_son")!;
+    const gercekHucre = hucreBul(veri, sahte.gercek.su_anki_konum.konum)!.kod;
+    const uzak = veri.hucreler.find((h) => h.kod !== gercekHucre && !h.komsular.includes(gercekHucre))!;
+    kayit.alanlar.hucre_kodu = uzak.kod;
+    kayit.geometri = { tip: "hucre", id: uzak.kod };
+    expect(tutarlilikDenetle(sahte, veri, katalog).length).toBeGreaterThan(0);
+    expect(() => parHesapla(sahte, veri, katalog)).toThrow(OracleReddi);
   });
 });
 

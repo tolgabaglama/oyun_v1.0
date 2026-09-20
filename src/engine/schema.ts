@@ -40,6 +40,8 @@ export interface SensorKapsam {
 export interface GurultuKurali {
   tip: string;
   olasilik?: number;
+  /** Doğruysa kural en son kayda uygulanmaz; o kayıt kanıt sayılır. */
+  son_kayit_haric?: boolean;
   /** Saklama süresi kuralları için gün aralığı. */
   gun_en_az?: number;
   gun_en_cok?: number;
@@ -65,8 +67,11 @@ export interface SertKisit {
   tum_kayitlar?: boolean;
   yakinlik_saat?: number;
   metre?: number;
-  /** Kısıtın geçerli olduğu gizli gerçek koşulu, ör. yalnızca araçla seyahat eden hedef. */
-  kosul?: { ulasim?: UlasimModu[] };
+  /**
+   * Kısıtın geçerli olduğu koşul. ulasim gizli gerçeğe bakar; alan ve deger ise kaydın
+   * kendi alanına bakar, yani oyuncunun da görebildiği bir bilgidir.
+   */
+  kosul?: { ulasim?: UlasimModu[]; alan?: string; deger?: string | number | boolean };
 }
 
 export interface SensorParametre {
