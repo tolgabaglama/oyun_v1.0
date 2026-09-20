@@ -1,128 +1,84 @@
 # İZ, yeni oyuncu için kurallar
 
-Bu dosya oyunun kurallarını anlatan metindir. Arayüz uygulaması Aşama 5'te yapılacak, burada
-yalnızca metin durur. Metin oyuncuya doğrudan gösterilebilecek dildedir.
+Bu dosya oyunun öğretici metnidir. Oyun bu dosyayı doğrudan okur, üç bölüm üç ekran olur.
+"Kafa karıştırıcı bulduğum kurallar" başlığından sonrası oyuncuya gösterilmez.
 
-## Ne yapıyorsunuz
+## Dosya masanızda
 
-Bir devlet biriminde sorgu memurusunuz. Elinizde bir dosya var: bir kişinin adı, yaşı ve
-hakkında yazılmış kısa bir not. Bu kişiye ulaşılmak isteniyor. Sizden istenen tek şey şu:
-bu kişi şu anda nerede?
+Saat 18:23. Bir devlet biriminde sorgu memurusunuz ve önünüzde ince bir dosya var.
+İçinde bir ad, bir yaş ve iki satırlık bir not. Notu kimin yazdığı belli değil, bilginin
+ne kadarı doğru belli değil.
 
-Kişi hakkında bir isnat yok. Neden arandığı size söylenmiyor, sizi de ilgilendirmiyor.
-Göreviniz konumu bulmak.
+Bu kişiye ulaşılmak isteniyor. Hakkında bir isnat yok, neden arandığı size söylenmiyor.
+Sizden istenen tek şey var: **bu kişi şu anda nerede?**
 
-Kişi hareket etmiyor. Bulunduğu yerde duruyor ve siz arayana kadar orada kalacak. Yani
-acele etmenize gerek yok, süre tutulmuyor.
+Kaçmıyor. Saklanmıyor. Bulunduğu yerde duruyor ve siz bulana kadar orada kalacak. Süre
+tutulmuyor, acele etmeniz gerekmiyor. Ama bir şey var: bu kişiyi görmüyorsunuz. Elinizde
+yalnızca **son 14 günde geride bıraktığı izler** var.
 
-## Elinizdeki tek şey: geçmişi
+Markete girdi. Kartını okuttu. Telefonu yanındaydı. Bir kargo aldı. Her biri bir yerde
+bir satır olarak duruyor ve o satırların hepsine erişebiliyorsunuz.
 
-Bu kişi son 14 günde yaşadı. Markete gitti, işe gitti, kartla ödeme yaptı, telefonu yanındaydı.
-Bunların her biri bir yerde kayıt bıraktı. Sizin işiniz bu kayıtlara bakıp kişinin nerede
-olduğunu çıkarmak.
+İşte oyun bu: bir insanın iki haftalık izlerine bakıp şu anki yerini bulmak.
 
-Ekranın altında dört sekme var:
+## Sorgu ekranı açık
 
-**DOSYA** Kişinin künyesi, hakkındaki not ve o ana kadar yaptığınız sorguların dökümü.
-**SORGU** Sorgulayabileceğiniz veri kaynaklarının listesi.
-**PANO** Sorgulardan dönen ham kayıtlar ve kendi notlarınız.
-**HARİTA** Her sorgunun haritaya düşen izi.
+Ekranın altında dört sekme var. **DOSYA** künye ve harcama dökümü. **SORGU** erişebileceğiniz
+veri kaynakları. **PANO** dönen ham kayıtlar ve not defteriniz. **HARİTA** her sorgunun
+haritaya düşen izi.
 
-## Puan: az veri kullanan kazanır
-
-1.000 puanla başlarsınız. Her sorgu kendi bedelini bu puandan düşer. Kişiyi bulduğunuzda
-elinizde kalan puan, o turun puanıdır.
-
-Yani oyun "ne kadar çok veri toplarsam o kadar iyi" oyunu değil. Tam tersi. Her şeyi
-sorgularsanız kişiyi kesin bulursunuz ama puanınız sıfıra yakın olur. İyi oyuncu, iki üç
-kayda bakıp gerisini kafasından çıkaran oyuncudur.
-
-Sorgu bedelleri dört kademeye ayrılır:
+**1.000 puanla başlıyorsunuz ve her sorgu bu puandan yiyor.** Kişiyi bulduğunuzda elinizde
+kalan puan, o dosyanın puanıdır. Yani her şeyi sorgularsanız kişiyi kesin bulursunuz ama
+hiçbir şey kazanmazsınız. İyi memur, iki kayda bakıp gerisini kafasından çıkarandır.
 
 | Kademe | Ne tür veri | Bedel |
 | --- | --- | --- |
 | 1 | Açık ve idari kayıt: nüfus, araç tescili, abonelik | 30 puan |
-| 2 | Hizmet kayıtları: İstanbulkart, kargo, eczane, köprü geçişi, kamera arşivi | 60 puan |
-| 3 | Mahrem veri: baz istasyonu, banka hareketleri, ev interneti | 120 puan |
-| 4 | Ağır döküm: 14 günlük tam baz kaydı, tam banka dökümü, ilçe geneli kamera taraması | 200 puan |
+| 2 | Hizmet kayıtları: İstanbulkart, kargo, eczane, köprü, kamera arşivi | 60 puan |
+| 3 | Mahrem veri: baz istasyonu, banka hareketleri, taksi, ev interneti | 120 puan |
+| 4 | Ağır döküm: 14 günlük baz kaydı, tam banka dökümü, ilçe taraması | 200 puan |
 
-Kademe yükseldikçe veri hem pahalanır hem mahremleşir. Bu kasıtlı: ucuz veri az şey söyler,
-pahalı veri çok şey söyler ve oyunun anlatmak istediği de tam olarak budur.
+Kademe yükseldikçe veri hem pahalanır hem mahremleşir. Bu bilinçli bir tasarımdır.
+Aynı sorguya tekrar bakmak bedavadır, ama başka bir kameraya veya başka bir güne bakmak
+yeni sorgudur ve tam bedel alınır.
 
-**Aynı sorguyu tekrar açmak bedava.** Bir sorgunun sonucuna sonra tekrar bakarsanız puan
-düşmez. Ama sorgunun ayrıntısını değiştirirseniz, örneğin başka bir kameraya veya başka bir
-güne bakarsanız, bu yeni bir sorgudur ve tam bedeli alınır.
+**Zaman her şeydir.** Ekranın üstünde şu yazar: ŞU AN, 14. gün, saat 18:23. Bütün kayıtlar
+buna göre okunur: "bugün 07:40", "dün 18:15", "6 gün önce 12:30". Eski kayıt size alışkanlık
+verir, bugünkü kayıt yer verir. Telefonun kapalı olduğu bir kişide son sinyal üç gün öncesine
+ait olabilir ve bu, o kaydın artık yeri göstermediği anlamına gelir. Kayıtta yazar, okuyun.
 
-## Zaman: her şey "şu ana" göre
+Her sorgu haritaya bir katman bırakır: nokta, baz hücresi, kamera konisi, güzergâh, adres.
+**Sistem sizin yerinize kesişim hesaplamaz.** Katmanları açıp kapatırsınız, raptiye
+koyarsınız, elediğiniz bölgeyi daire içine alırsınız, not yazarsınız. Bunların hiçbiri
+puan yakmaz. Haritadaki her noktaya dokunursanız künyesi açılır.
 
-Dosya ekranının üstünde şöyle bir satır durur: **ŞU AN: 14. gün, saat 18:23.**
+## Karar sizin
 
-14. gün bugündür, yani kişinin aranmakta olduğu an. 1. gün iki hafta öncesidir. Bütün kayıtlar
-bu ana göre yazılır: "bugün 07:40", "dün 18:15", "6 gün önce 12:30".
+Bir yerden emin olduğunuzda haritada o noktaya basılı tutun.
 
-Bu ayrım önemlidir. Kişinin 9. günde gittiği market size alışkanlığını söyler. Bugün öğleden
-sonra bıraktığı kayıt ise doğrudan yerini söyleyebilir. Eski kayıt örüntü, yeni kayıt konumdur.
+**150 metre** içindeyseniz doğru sayılır ve kalan puanınızı alırsınız. Yanlışsa **250 puan**
+gider ve dosya açık kalır. **İkinci yanlışta dosya kapanır**, elinizde hiçbir şey kalmaz.
+Acele bir tahmin, iki sorgudan pahalıdır.
 
-Nüfus kaydı ve araç tescili gibi kayıtların tarihi yoktur, onlarda "sabit" yazar.
+Dosya kapandığında **par** değerini görürsünüz: o kişiyi kesin kanıtlarla bulmanın en ucuz
+yolu. Par yalnızca kanıtı sayar, sezgiyi saymaz. Bu yüzden par'ın altına inebilirsiniz.
+Kişinin her sabah aynı duraktan bindiğini fark ederseniz, sistemin kanıt saydığı pahalı
+sorguyu hiç yapmadan doğru kapıyı çalarsınız. **Par'ı geçmek bu işin ustalığıdır.**
 
-## Haritayı siz okursunuz
+Bazı dosyalarda künyenin altında **NİTELİKLİ HEDEF** yazar. O kişi az iz bırakmıştır,
+çözüm normalden pahalıya mal olacaktır. Uyarılmış sayılın.
 
-Her sorgu sonucu haritaya bir katman olarak düşer. Katmanın biçimi veri türüne göre değişir:
+Üç zorluk var. **Kolay**, kalan aday sayısı ekranda görünür ve kişi evindedir. **Standart**,
+sayaç kapalıdır, kişi işinde veya sık gittiği üçüncü bir yerdedir. **Uzman**, ağır dökümler
+kapalıdır ve kişi rutininin dışındadır.
 
-- **Nokta** bir yerde bulunduğunu gösterir: ATM, eczane, market.
-- **Baz hücresi** geniş bir alandır. Telefonun o çevrede olduğunu söyler, tam yerini değil.
-- **Kamera konisi** kameranın baktığı yöndür. İçine giren biri kaydedilmiştir.
-- **Güzergâh** iki nokta arasındaki hareketi gösterir: otobüs durakları, köprü geçişi, taksi.
-- **Adres** bir mahalleyi veya bir binayı işaret eder.
+Her dosyanın bir numarası vardır ve aynı numara her zaman aynı dosyayı verir. Numarayı bir
+arkadaşınıza yollayın, o da aynı kişiyi aynı kayıtlarla arasın. Kimin daha az veriyle
+bulduğunu karşılaştırın.
 
-**Sistem sizin yerinize kesişim hesaplamaz.** İki katmanın çakıştığı yeri kendiniz görürsünüz.
-Bunun için katmanları tek tek açıp kapatabilir, haritaya raptiye koyabilir, elediğiniz bölgeleri
-daire içine alabilir ve not defterine yazabilirsiniz. Bunların hiçbiri puandan düşmez.
-
-Haritadaki her noktaya dokunursanız künyesi açılır: adı, ne olduğu, hangi ilçe ve mahallede
-olduğu, o noktada kamera bulunup bulunmadığı.
-
-## Tahmin: iki hakkınız var
-
-Bir yerden emin olduğunuzda haritada o noktaya basılı tutun. Onay ekranı çıkar.
-
-- **150 metre** yarıçap içindeyseniz doğru sayılır ve kalan puanınızı alırsınız.
-- Yanlışsa **250 puan** ceza alırsınız ve tur devam eder.
-- **İkinci yanlışta** tur kapanır, puanınız sıfırdır.
-
-Yani acele bir tahmin, iki sorgudan pahalıdır. Emin değilseniz bir sorgu daha yapmak genelde
-daha ucuzdur.
-
-## Par: en verimli çözüm
-
-Her dosyanın bir **par** değeri vardır. Par, o dosyayı kesin kanıtlarla çözmenin en ucuz
-yoludur. Tur sonunda par ile sizin harcamanız karşılaştırılır.
-
-Par yalnızca kesin kanıtları sayar. Davranış çıkarımını saymaz. Bu yüzden par'ın altına
-inebilirsiniz: kişinin her sabah aynı duraktan bindiğini fark ederseniz, sistemin kanıt saydığı
-pahalı sorguyu yapmadan doğru yeri bulabilirsiniz. Par'ı geçmek oyunun asıl ustalığıdır.
-
-## Zorluk
-
-**Kolay** Kalan aday sayısı ekranda görünür. Kişi evindedir.
-**Standart** Aday sayısı görünmez. Kişi işinde veya sık gittiği üçüncü bir yerdedir.
-**Uzman** Kademe 4 sorguları kapalıdır. Kişi rutini dışında bir yerdedir.
-
-## Dosya numarası
-
-Her dosyanın bir numarası vardır ve aynı numara her zaman aynı dosyayı verir. Numarayı
-kopyalayıp bir arkadaşınıza yollarsanız o da tam olarak aynı kişiyi, aynı kayıtlarla arar.
-Kimin daha az veriyle bulduğunu karşılaştırabilirsiniz.
-
-## Son bir şey
-
-Bu oyundaki kişiler, kurumlar, kameralar ve kayıtların tamamı kurgusaldır. Gerçek bir kurum
-adı, gerçek bir marka adı veya gerçek bir kamera konumu kullanılmaz.
-
-Ama mekanizma kurgusal değildir. Bir insanın iki haftada kaç yerde iz bıraktığını, tur sonunda
-göreceksiniz.
-
----
+Son olarak şunu bilin: bu oyundaki kişiler, kurumlar, kameralar ve kayıtların tamamı
+kurgusaldır. Mekanizma değildir. Bir insanın iki haftada kaç yerde iz bıraktığını dosya
+kapandığında göreceksiniz.
 
 # Kafa karıştırıcı bulduğum kurallar
 

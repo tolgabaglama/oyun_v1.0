@@ -378,6 +378,31 @@ export class HaritaYoneticisi {
     });
   }
 
+  /**
+   * Yeni dosyaya geçerken önceki dosyanın izlerini siler: sorgu katmanları, çizimler ve balon.
+   * Nokta ve kamera katmanları dosyadan bağımsızdır, yerinde kalır ama gizlenir.
+   */
+  turuSifirla(): void {
+    this.isYap(() => {
+      const harita = this.harita!;
+      for (const kaynak of this.eklenenKatmanlar) {
+        for (const son of ["dolgu", "sinir", "nokta"]) {
+          const id = `${kaynak}-${son}`;
+          if (harita.getLayer(id)) harita.removeLayer(id);
+        }
+        if (harita.getSource(kaynak)) harita.removeSource(kaynak);
+      }
+      this.eklenenKatmanlar.clear();
+      const cizimler = harita.getSource("cizimler") as { setData: (d: unknown) => void } | undefined;
+      cizimler?.setData({ type: "FeatureCollection", features: [] });
+      this.balon?.remove();
+      this.balon = null;
+      this.noktalariGoster(false);
+      this.kameralariGoster(false);
+    });
+    this.modAyarla("gez");
+  }
+
   /** Bir katmanın kapsadığı alana yaklaştırır. */
   katmanaGit(sonuc: SonucGorunumu): void {
     this.isYap(() => {

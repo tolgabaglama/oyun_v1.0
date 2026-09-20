@@ -82,6 +82,9 @@ function anaEkranaDon(): void {
 function turBaslat(seed: number, zorluk: Zorluk): void {
   try {
     uyg.oturum = Oturum.baslat(seed, zorluk, uyg.veri, uyg.katalog);
+    // Önceki dosyanın katmanları haritada kalmasın.
+    harita?.turuSifirla();
+    haritaModu = "gez";
   } catch (e) {
     hataGoster(e instanceof DavaBulunamadi ? e.message : "Dosya üretilemedi.");
     return;
@@ -415,6 +418,9 @@ function ciz(): void {
       if (!kayit) return;
       try {
         uyg.oturum = Oturum.yukle(kayit, uyg.veri, uyg.katalog);
+        // Kayıttan dönerken de harita önceki dosyayı taşıyor olabilir.
+        harita?.turuSifirla();
+        haritaModu = "gez";
         uyg.sekme = (uyg.oturum.aktifSekme as SekmeKimligi) ?? "dosya";
         uyg.ekran = uyg.oturum.bitti() ? "tur_sonu" : "tur";
         ciz();
