@@ -98,6 +98,8 @@ export interface SensorTanimi {
   odeme_gerekir?: Odeme;
   birlesik?: string[];
   yakalama_olasiligi: number;
+  /** Kayıt hedefin o anda orada bulunduğunu gösterir mi. Adres bildiren sensörlerde false. */
+  konum_kaniti?: boolean;
   kapsama?: Kapsama;
   yakalama_yaricapi_m?: number;
   belirsizlik_m?: number;
@@ -308,7 +310,8 @@ export function davaDogrula(dava: Dava, katalog: SensorKatalogu): string[] {
     toplam += adim.maliyet;
   }
   if (toplam !== dava.par.deger) hatalar.push(`par değeri ${dava.par.deger}, yol toplamı ${toplam}`);
-  if (dava.par.yol.length > 0 && dava.par.yol.at(-1)!.kalan_aday !== 1) hatalar.push("par yolunun sonunda tek aday kalmalı");
+  // Par yolunun sonunda kalan adaylar tek noktaya sayılır: hepsi doğru tahmin yarıçapına sığar.
+  if (dava.par.yol.length > 0 && dava.par.yol.at(-1)!.kalan_aday < 1) hatalar.push("par yolunun sonunda en az bir aday kalmalı");
 
   if (dava.ozet.toplam_kayit !== dava.kayitlar.length) hatalar.push("ozet.toplam_kayit kayıt sayısıyla uyumsuz");
   const gurultuSayisi = dava.kayitlar.filter((k) => k.gurultu !== null).length;

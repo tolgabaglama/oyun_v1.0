@@ -90,7 +90,8 @@
       ],
       "sert_kisit": null,
       "parametreler": [],
-      "kart_metni": "Kayıtlı ikamet: {ilce} / {mahalle}. Kayıt yılı {kayit_yili}."
+      "kart_metni": "Kayıtlı ikamet: {ilce} / {mahalle}. Kayıt yılı {kayit_yili}.",
+      "konum_kaniti": false
     },
     {
       "id": "arac_tescili",
@@ -125,7 +126,8 @@
         "alan": "arac_var",
         "deger": "hayır"
       },
-      "bos_metni": "Adına kayıtlı araç yok."
+      "bos_metni": "Adına kayıtlı araç yok.",
+      "konum_kaniti": false
     },
     {
       "id": "abonelik",
@@ -161,7 +163,8 @@
       ],
       "sert_kisit": null,
       "parametreler": [],
-      "kart_metni": "Abonelik adresi: {ilce} / {mahalle}. Abone tipi {abone_tipi}."
+      "kart_metni": "Abonelik adresi: {ilce} / {mahalle}. Abone tipi {abone_tipi}.",
+      "konum_kaniti": false
     },
     {
       "id": "sosyal_medya",
@@ -330,7 +333,8 @@
         "tip": "aday_yer"
       },
       "parametreler": [],
-      "kart_metni": "Son teslimat {gun}. gün: {ilce} / {mahalle} ({teslim_yeri})."
+      "kart_metni": "Son teslimat {gun}. gün: {ilce} / {mahalle} ({teslim_yeri}).",
+      "konum_kaniti": false
     },
     {
       "id": "eczane",
@@ -677,7 +681,8 @@
       ],
       "sert_kisit": null,
       "parametreler": [],
-      "kart_metni": "Abonelik: {ilce} / {mahalle}. Son bağlantı {son_baglanti_gun}. gün {son_baglanti_saat}."
+      "kart_metni": "Abonelik: {ilce} / {mahalle}. Son bağlantı {son_baglanti_gun}. gün {son_baglanti_saat}.",
+      "konum_kaniti": false
     },
     {
       "id": "ozel_kamera_dar",
@@ -698,8 +703,7 @@
         "eczane",
         "atm_cekim",
         "doviz",
-        "benzin",
-        "kargo_teslim"
+        "benzin"
       ],
       "yakalama_olasiligi": 1.0,
       "kapsama": {
@@ -904,8 +908,7 @@
         "eczane",
         "atm_cekim",
         "doviz",
-        "benzin",
-        "kargo_teslim"
+        "benzin"
       ],
       "yakalama_olasiligi": 1.0,
       "kapsama": {
@@ -959,5 +962,6 @@
   ],
   "kapsama_aciklamasi": "Bazı sensörler yalnızca belirli POI kategorilerinde kayıt bırakır. kapsama alanı: hangi POI alanına bakılacağı, kategori başına oran ve varsayılan. Oran POI başına bir kez ve deterministik olarak çözülür; aynı POI dava boyunca ya kapsamdadır ya değildir.",
   "bos_sonuc_aciklamasi": "bos_kosulu sağlanan kayıt anlamlı bilgi taşımaz: yalnızca bos_metni gösterilir, diğer alanlar ve harita katmanı düşer.",
-  "tutar_aciklamasi": "Sensör kendi tutar_araliklari listesini verebilir; vermezse genel banka aralıkları kullanılır."
+  "tutar_aciklamasi": "Sensör kendi tutar_araliklari listesini verebilir; vermezse genel banka aralıkları kullanılır.",
+  "konum_kaniti_aciklamasi": "konum_kaniti false olan sensör hedefin o anda orada bulunduğunu göstermez: adres bildirir. Zaman ekseni denetiminde bu kayıtlar hedefin fiziksel konumu sayılmaz."
 }

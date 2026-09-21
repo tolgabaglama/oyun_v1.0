@@ -8,6 +8,7 @@ import { sorgula, kullanilabilirSensorler, SorguHatasi } from "../src/engine/que
 import { turBaslat, sorguYap, tahminYap, turOzeti, TAVAN_PUAN, YANLIS_CEZASI } from "../src/engine/scoring.ts";
 import { mesafeM } from "../src/engine/geo.ts";
 import { hucreBul } from "../src/engine/data.ts";
+import { zamanDenetle, kayitKonumu, AZAMI_HIZ_M_DK, AYNI_AN_TOLERANSI_M } from "../src/engine/zaman.ts";
 
 let veri: Veri;
 let katalog: SensorKatalogu;
@@ -36,9 +37,12 @@ describe("determinizm", () => {
   });
 
   it("aynı seed aynı par yolunu verir", () => {
-    const a = davaKur(1, "kolay", veri, katalog);
-    const b = davaKur(1, "kolay", veri, katalog);
+    // Kabul edilmiş bir dosya kullanılır; sabit bir seed üretici değişince reddedilebilir.
+    const ornek = ornekler[0];
+    const a = davaKur(ornek.seed, ornek.zorluk, veri, katalog);
+    const b = davaKur(ornek.seed, ornek.zorluk, veri, katalog);
     expect(a.par).toEqual(b.par);
+    expect(a.seed).toBe(ornek.seed);
   });
 
   it("farklı seed farklı dava üretir", () => {
@@ -226,6 +230,75 @@ describe("baz kaydı ve cihaz durumu", () => {
       if (!k || k.alanlar.cihaz_acik !== "evet") continue;
       expect(k.gurultu).not.toBe("komsu_hucre");
     }
+  });
+});
+
+describe("zaman ekseni", () => {
+  it("hiçbir kayıt şu andan sonrasına ait değildir", () => {
+    for (const d of ornekler) {
+      const t0 = zamanDakika(d.gercek.su_anki_zaman);
+      for (const k of d.kayitlar) expect(zamanDakika(k.zaman)).toBeLessThanOrEqual(t0);
+    }
+  });
+
+  it("hedef aynı anda iki farklı yerde görünmez", () => {
+    for (const d of ornekler) {
+      const ihlaller = zamanDenetle(d, veri, katalog).filter((x) => x.tip === "ayni_an");
+      expect(ihlaller).toEqual([]);
+    }
+  });
+
+  it("ardışık konumlar arası mesafe makul hızda kat edilebilir", () => {
+    for (const d of ornekler) {
+      const ihlaller = zamanDenetle(d, veri, katalog).filter((x) => x.tip === "hiz");
+      expect(ihlaller).toEqual([]);
+    }
+  });
+
+  it("300 seedde üretilen hiçbir dosyada zaman ihlali yoktur", () => {
+    const zorluklar: Zorluk[] = ["kolay", "standart", "uzman"];
+    let uretilen = 0;
+    const ihlalli: string[] = [];
+    for (let seed = 1; seed <= 300; seed++) {
+      let d: Dava;
+      try {
+        // Denetimi atlayarak üretir: kuralı üreticinin kendisi sağlamalı, süzgeç son çare olmalı.
+        d = davaUret(seed, zorluklar[seed % 3], veri, katalog, true);
+      } catch (e) {
+        if (e instanceof UretimReddi) continue;
+        throw e;
+      }
+      uretilen++;
+      const ih = zamanDenetle(d, veri, katalog);
+      if (ih.length) ihlalli.push(`seed ${seed}: ${ih[0].tip} ${ih[0].aciklama}`);
+    }
+    expect(uretilen).toBeGreaterThan(250);
+    expect(ihlalli).toEqual([]);
+  });
+
+  it("denetim yapay bir zaman ihlalini yakalar", () => {
+    const kaynak = ornekler.find((d) => d.kayitlar.some((k) => k.gurultu === null && kayitKonumu(veri, k)))!;
+    const gelecekte: Dava = structuredClone(kaynak);
+    const ileri = gelecekte.kayitlar[0];
+    ileri.zaman = { ...gelecekte.gercek.su_anki_zaman, gun: 14, saat: 23, dakika: 59 };
+    expect(zamanDenetle(gelecekte, veri, katalog).some((x) => x.tip === "gelecek")).toBe(true);
+
+    // Aynı dakikada uzak iki nokta: hız ve aynı an kuralları birlikte denenir.
+    const sicrama: Dava = structuredClone(kaynak);
+    const konumlu = sicrama.kayitlar.filter((k) => k.gurultu === null && kayitKonumu(veri, k));
+    const uzak = veri.poiler.find((p) => mesafeM(p.konum, veri.poiMap.get(String(konumlu[0].geometri!.id))?.konum ?? p.konum) > 20000);
+    if (uzak && konumlu.length >= 2) {
+      konumlu[1].zaman = { ...konumlu[0].zaman };
+      konumlu[1].geometri = { tip: "poi", id: uzak.id };
+      konumlu[1].olay_id = konumlu[0].olay_id === null ? null : `${konumlu[0].olay_id}-baska`;
+      expect(zamanDenetle(sicrama, veri, katalog).some((x) => x.tip === "ayni_an" || x.tip === "hiz")).toBe(true);
+    }
+  });
+
+  it("eşikler makul sınırlarda tanımlı", () => {
+    expect(AZAMI_HIZ_M_DK).toBeGreaterThan(500);
+    expect(AZAMI_HIZ_M_DK).toBeLessThanOrEqual(1500);
+    expect(AYNI_AN_TOLERANSI_M).toBeLessThanOrEqual(300);
   });
 });
 

@@ -104,6 +104,8 @@ Aynı sensörün dar sorgusu ucuz, geniş sorgusu pahalıdır (örnek: "son kay�
 * Baz kaydının geçerlilik kuralı: cihaz şu anda açıksa son sinyal hedefin bulunduğu hücreye aittir ve konum kanıtıdır, komşu hücre gürültüsü bu kayda uygulanmaz. Cihaz kapalıysa son sinyal kapanma anına aittir, konum kanıtı sayılmaz. Her iki durumda da kaydın üstünde cihazın açık mı kapalı mı olduğu ve kapalıysa kaç gündür sinyal alınmadığı yazar. Oyuncu verinin ne zaman geçerli olduğunu bilmeden adil karar veremez.
 * Şu anki konum: kolayda ev, ortada iş veya üçüncü nokta, zorda rutin dışı bir yer.
 
+Zaman ekseni kuralı: üretilen dosya fiziksel olarak mümkün olmalıdır. Hiçbir kayıt şu andan sonrasına ait olamaz, hedef aynı anda iki farklı yerde görünemez, ardışık iki konum arasındaki mesafe aradaki sürede makul hızda (azami 72 km/s) kat edilebilmelidir. Üretici hedefin gün boyunca nerede olduğunu bir çizelgede tutar ve anlık olayları yalnızca hedefin yürüme mesafesinde olduğu anlara yerleştirir. Adres bildiren sensörler (nüfus, tescil, abonelik, ev interneti, kargo) hedefin orada bulunduğunu göstermez, bu denetime girmez. Kural ihlal edilirse dosya üretimde reddedilir ve testlerle doğrulanır.
+
 Adalet kuralı: şu anki konumun geçmiş izlerde en az bir bağı olmalıdır. Rutin çalıştırılır, her hareket sensörlere olasılıkla düşer, gürültü eklenir (aynı isimli ikinci kişi, komşu hücreye sıçrayan baz kaydı, sahte adres).
 
 Oracle: sadece sızdırılan verilerle hedef tek noktaya indirilebiliyor mu, en ucuz yol nedir? Çözülemeyen dava atılır ve yeniden üretilir. Tek sorguda biten dava atılır. En ucuz yolun maliyeti par olur. Oracle için birim testleri zorunludur.
